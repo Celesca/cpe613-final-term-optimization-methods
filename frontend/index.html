@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Debt Collection Optimizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highs@1.15.3/build/highs.js"></script>
+<style>
+:root {
+  --bg: #f6f5f1; --panel: #ffffff; --ink: #1d2327; --muted: #5f6b73; --line: #e2e0d8;
+  --accent: #2a6f97; --accent-ink: #ffffff; --warn: #b5541c; --ok: #2f7d4f; --bad: #b03030;
+  --s0: #a9a9a9; --s1: #8cc0de; --s2: #2a6f97; --s3: #e8a964; --s4: #c46a24; --s5: #6e2a0e;
+  --track: #ecebe5;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15181b; --panel: #1e2226; --ink: #e8e6e1; --muted: #9aa5ad; --line: #30363c;
+    --accent: #6fb3d9; --accent-ink: #0f1a22; --warn: #e39a5f; --ok: #6cc28f; --bad: #e07a7a;
+    --s0: #6c7378; --s1: #7fb6d6; --s2: #4a93c0; --s3: #e8a964; --s4: #d17d3a; --s5: #a5502b;
+    --track: #2a2f34;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15181b; --panel: #1e2226; --ink: #e8e6e1; --muted: #9aa5ad; --line: #30363c;
+  --accent: #6fb3d9; --accent-ink: #0f1a22; --warn: #e39a5f; --ok: #6cc28f; --bad: #e07a7a;
+  --s0: #6c7378; --s1: #7fb6d6; --s2: #4a93c0; --s3: #e8a964; --s4: #d17d3a; --s5: #a5502b;
+  --track: #2a2f34;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.5 "IBM Plex Sans", "IBM Plex Sans Thai", system-ui, sans-serif; }
+.th { font-family: "IBM Plex Sans Thai", sans-serif; color: var(--muted); font-size: 12px; }
+.mono, td.num, .kpi b { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+header { padding: 22px 24px 14px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; }
+header h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+header p { margin: 2px 0 0; color: var(--muted); }
+.facts { display: flex; gap: 20px; flex-wrap: wrap; color: var(--muted); font-size: 12px; }
+.facts b { display: block; color: var(--ink); font-size: 15px; font-family: "IBM Plex Mono", monospace; font-weight: 500; }
+main { display: grid; grid-template-columns: 360px 1fr; gap: 18px; padding: 18px 24px 40px; align-items: start; }
+main > * { min-width: 0; }
+@media (max-width: 980px) { main { grid-template-columns: minmax(0, 1fr); padding: 16px; } header { padding: 18px 16px 12px; } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.card + .card { margin-top: 14px; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+h3 { font-size: 14px; margin: 0 0 8px; font-weight: 600; }
+aside { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }
+@media (max-width: 980px) { aside { position: static; max-height: none; } }
+.field { display: grid; grid-template-columns: 1fr 110px; gap: 4px 10px; align-items: center; margin: 7px 0; }
+.field label { font-size: 13px; }
+.field small { grid-column: 1 / -1; color: var(--muted); font-size: 11.5px; margin-top: -3px; }
+input[type=number], select { width: 100%; padding: 5px 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); font: inherit; font-size: 13px; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+button { font: inherit; font-size: 13px; padding: 7px 12px; border-radius: 7px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button:disabled { opacity: 0.55; cursor: progress; }
+.presets button { font-size: 12px; padding: 4px 9px; }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-size: 12px; }
+td.num, th.num { text-align: right; }
+.scroll { overflow-x: auto; }
+.strat { padding: 9px 0; border-bottom: 1px solid var(--line); }
+.strat:last-child { border-bottom: 0; }
+.strat-head label { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+.strat-head .th { display: block; margin-left: 22px; }
+.strat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 6px 0 4px 22px; }
+.strat-grid label { font-size: 11px; color: var(--muted); }
+.strat-grid input { padding: 3px 6px; }
+.strat-pri { display: grid; grid-template-columns: auto 1fr 38px; gap: 8px; align-items: center; margin-left: 22px; font-size: 11.5px; color: var(--muted); }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.kpi span { color: var(--muted); font-size: 12px; }
+.kpi b { display: block; font-size: 20px; font-weight: 500; margin-top: 2px; }
+.kpi em { font-style: normal; font-size: 11.5px; color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 1250px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.grid2 .card + .card { margin-top: 0; }
+.util { margin: 8px 0; }
+.util .row { display: flex; justify-content: space-between; font-size: 12.5px; }
+.bar { height: 8px; background: var(--track); border-radius: 4px; overflow: hidden; margin-top: 3px; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.bar i.full { background: var(--warn); }
+.chip { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11.5px; color: #fff; }
+.status { font-size: 12.5px; color: var(--muted); min-height: 20px; margin-top: 8px; }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.progress { height: 3px; background: var(--track); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+.progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .1s; }
+.chart-box { position: relative; height: 260px; }
+.note { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; margin: 4px 0 10px; }
+.mixbar { display: flex; height: 22px; border-radius: 5px; overflow: hidden; margin: 6px 0 2px; }
+.mixbar div { height: 100%; }
+.mixrow { display: grid; grid-template-columns: 120px 1fr 44px; gap: 10px; align-items: center; font-size: 12.5px; }
+.theme-toggle { font-size: 12px; padding: 4px 9px; }
+.empty { color: var(--muted); padding: 30px 0; text-align: center; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Debt Collection Strategy Optimizer</h1>
+    <p>CPE 613 term project — assign one collection strategy per delinquent account to maximise expected net recovery (THB). <span class="th">ระบบจัดสรรกลยุทธ์การติดตามหนี้</span></p>
+  </div>
+  <div class="facts" id="facts"></div>
+</header>
+
+<main>
+<aside>
+  <div class="card">
+    <h2>Portfolio &amp; constraints</h2>
+    <div class="field"><label for="n">Accounts N</label><input type="number" id="n" min="5" max="300" step="1"><small>First N accounts of the 300-account LendingClub pool (N = 30 is the report instance).</small></div>
+    <div class="field"><label for="fx">FX rate (THB / USD)</label><input type="number" id="fx" step="0.1"></div>
+    <div class="field"><label for="budget">Budget B<sub>max</sub> (฿)</label><input type="number" id="budget" step="5000"></div>
+    <div class="field"><label for="call_hours">Call-center hours H</label><input type="number" id="call_hours" step="0.75"></div>
+    <div class="field"><label for="field_slots">Field visits V</label><input type="number" id="field_slots" step="1"></div>
+    <div class="field"><label for="hard_cap">Hard-collection cap M</label><input type="number" id="hard_cap" step="1"><small>Max accounts sent to agency + legal (customer-conduct policy).</small></div>
+    <div class="field"><label for="legal_retainer">Law-firm retainer F (฿)</label><input type="number" id="legal_retainer" step="5000"></div>
+    <div class="field"><label for="legal_min_cases">Min legal cases L</label><input type="number" id="legal_min_cases" step="1"></div>
+    <div class="field"><label for="legal_min_balance">Legal min balance (฿)</label><input type="number" id="legal_min_balance" step="10000"></div>
+    <div class="field"><label for="must_act_dpd">Must-act DPD ≥</label><input type="number" id="must_act_dpd" step="30"><small>These accounts cannot receive “No action”.</small></div>
+    <div class="field"><label for="account_priority">Account priority w<sub>i</sub></label>
+      <select id="account_priority"><option value="none">Equal</option><option value="balance">Larger balance first</option><option value="dpd">Older delinquency first</option><option value="grade">Riskier grade first</option></select></div>
+  </div>
+
+  <div class="card">
+    <h2>Strategies &amp; priority π<sub>k</sub></h2>
+    <div class="presets btns" style="margin:0 0 8px">
+      <button data-preset="default">Neutral</button>
+      <button data-preset="friendly">Customer-friendly</button>
+      <button data-preset="aggressive">Aggressive recovery</button>
+    </div>
+    <div id="strat-table"></div>
+    <p class="note">Lift multiplies the model’s base recovery rate ρ<sub>i</sub>. Priority π<sub>k</sub> &gt; 1 favours a strategy in the objective; reported THB figures always use the true values.</p>
+  </div>
+
+  <div class="card">
+    <div class="btns" style="margin-top:0">
+      <button class="primary" id="run">Run optimization</button>
+      <button id="pareto">Pareto front</button>
+      <button id="reset">Reset</button>
+      <button class="theme-toggle" id="theme">Theme</button>
+    </div>
+    <div class="progress"><i id="prog"></i></div>
+    <div class="status" id="status">Loading exact solver…</div>
+  </div>
+</aside>
+
+<section>
+  <div class="kpis" id="kpis"></div>
+
+  <div class="card" style="margin-top:14px">
+    <h2>Method comparison</h2>
+    <div class="scroll"><table id="cmp"><tr><td class="empty">Press <b>Run optimization</b>.</td></tr></table></div>
+    <p class="note" id="cmp-note"></p>
+  </div>
+
+  <div class="grid2" style="margin-top:14px">
+    <div class="card">
+      <h2>Strategy mix (best solution)</h2>
+      <div id="mix"><div class="empty">No solution yet</div></div>
+    </div>
+    <div class="card">
+      <h2>Resource use &amp; shadow prices</h2>
+      <div id="util"><div class="empty">No solution yet</div></div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:14px">
+    <div class="card">
+      <h2>Meta-heuristic convergence</h2>
+      <div class="chart-box"><canvas id="conv"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Pareto front: gross recovery vs cost</h2>
+      <div class="chart-box"><canvas id="par"></canvas></div>
+      <p class="note">ε-constraint: max f<sub>1</sub> (gross recovery) subject to f<sub>2</sub> (cost) ≤ ε, all other constraints kept.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h2>Account assignment</h2>
+    <div class="scroll"><table id="assign"><tr><td class="empty">No solution yet</td></tr></table></div>
+  </div>
+</section>
+</main>
+
+<script id="payload" type="application/json">{"accounts":[{"account_id":"TH0001","grade":"B","sub_grade":"B5","dpd":60,"reachable":1,"balance_thb":154000.0,"p_pay":0.836,"rate_if_pay":0.178,"rho":0.132},{"account_id":"TH0002","grade":"A","sub_grade":"A5","dpd":120,"reachable":1,"balance_thb":101900.0,"p_pay":0.2804,"rate_if_pay":0.1583,"rho":0.031},{"account_id":"TH0003","grade":"D","sub_grade":"D2","dpd":90,"reachable":1,"balance_thb":123900.0,"p_pay":0.4616,"rate_if_pay":0.1782,"rho":0.0647},{"account_id":"TH0004","grade":"D","sub_grade":"D2","dpd":180,"reachable":1,"balance_thb":435200.0,"p_pay":0.7612,"rate_if_pay":0.1537,"rho":0.0642},{"account_id":"TH0005","grade":"C","sub_grade":"C3","dpd":60,"reachable":1,"balance_thb":94000.0,"p_pay":0.644,"rate_if_pay":0.1663,"rho":0.095},{"account_id":"TH0006","grade":"C","sub_grade":"C3","dpd":120,"reachable":1,"balance_thb":356800.0,"p_pay":0.9297,"rate_if_pay":0.1366,"rho":0.0886},{"account_id":"TH0007","grade":"D","sub_grade":"D1","dpd":180,"reachable":1,"balance_thb":154300.0,"p_pay":0.1493,"rate_if_pay":0.138,"rho":0.0113},{"account_id":"TH0008","grade":"D","sub_grade":"D1","dpd":60,"reachable":0,"balance_thb":199800.0,"p_pay":0.9926,"rate_if_pay":0.0961,"rho":0.0846},{"account_id":"TH0009","grade":"F","sub_grade":"F4","dpd":90,"reachable":1,"balance_thb":891600.0,"p_pay":0.7045,"rate_if_pay":0.155,"rho":0.0859},{"account_id":"TH0010","grade":"D","sub_grade":"D4","dpd":90,"reachable":1,"balance_thb":493500.0,"p_pay":0.8183,"rate_if_pay":0.1438,"rho":0.0926},{"account_id":"TH0011","grade":"C","sub_grade":"C5","dpd":60,"reachable":1,"balance_thb":177700.0,"p_pay":0.1073,"rate_if_pay":0.156,"rho":0.0148},{"account_id":"TH0012","grade":"D","sub_grade":"D3","dpd":60,"reachable":0,"balance_thb":421600.0,"p_pay":0.7752,"rate_if_pay":0.1519,"rho":0.1044},{"account_id":"TH0013","grade":"G","sub_grade":"G1","dpd":180,"reachable":0,"balance_thb":330000.0,"p_pay":0.6512,"rate_if_pay":0.158,"rho":0.0565},{"account_id":"TH0014","grade":"D","sub_grade":"D1","dpd":90,"reachable":1,"balance_thb":424000.0,"p_pay":0.4707,"rate_if_pay":0.1615,"rho":0.0598},{"account_id":"TH0015","grade":"C","sub_grade":"C5","dpd":30,"reachable":1,"balance_thb":208600.0,"p_pay":0.8469,"rate_if_pay":0.1482,"rho":0.1255},{"account_id":"TH0016","grade":"A","sub_grade":"A3","dpd":120,"reachable":1,"balance_thb":41700.0,"p_pay":0.0978,"rate_if_pay":0.1988,"rho":0.0136},{"account_id":"TH0017","grade":"B","sub_grade":"B1","dpd":60,"reachable":1,"balance_thb":16600.0,"p_pay":0.6002,"rate_if_pay":0.2386,"rho":0.127},{"account_id":"TH0018","grade":"E","sub_grade":"E4","dpd":30,"reachable":0,"balance_thb":658200.0,"p_pay":0.8118,"rate_if_pay":0.1592,"rho":0.1293},{"account_id":"TH0019","grade":"C","sub_grade":"C1","dpd":60,"reachable":1,"balance_thb":191600.0,"p_pay":0.7884,"rate_if_pay":0.1473,"rho":0.103},{"account_id":"TH0020","grade":"B","sub_grade":"B2","dpd":90,"reachable":1,"balance_thb":176600.0,"p_pay":0.8301,"rate_if_pay":0.254,"rho":0.1659},{"account_id":"TH0021","grade":"C","sub_grade":"C1","dpd":180,"reachable":0,"balance_thb":891100.0,"p_pay":0.3392,"rate_if_pay":0.1338,"rho":0.0249},{"account_id":"TH0022","grade":"B","sub_grade":"B5","dpd":60,"reachable":1,"balance_thb":118300.0,"p_pay":0.7216,"rate_if_pay":0.1904,"rho":0.1219},{"account_id":"TH0023","grade":"A","sub_grade":"A3","dpd":60,"reachable":1,"balance_thb":128200.0,"p_pay":0.6624,"rate_if_pay":0.1825,"rho":0.1072},{"account_id":"TH0024","grade":"G","sub_grade":"G1","dpd":30,"reachable":0,"balance_thb":492300.0,"p_pay":0.843,"rate_if_pay":0.1369,"rho":0.1154},{"account_id":"TH0025","grade":"D","sub_grade":"D2","dpd":120,"reachable":1,"balance_thb":365200.0,"p_pay":0.7313,"rate_if_pay":0.1517,"rho":0.0774},{"account_id":"TH0026","grade":"E","sub_grade":"E3","dpd":30,"reachable":1,"balance_thb":338800.0,"p_pay":0.7643,"rate_if_pay":0.1729,"rho":0.1321},{"account_id":"TH0027","grade":"E","sub_grade":"E1","dpd":90,"reachable":1,"balance_thb":386900.0,"p_pay":0.6668,"rate_if_pay":0.1501,"rho":0.0787},{"account_id":"TH0028","grade":"E","sub_grade":"E1","dpd":90,"reachable":1,"balance_thb":310000.0,"p_pay":0.7363,"rate_if_pay":0.169,"rho":0.0979},{"account_id":"TH0029","grade":"A","sub_grade":"A1","dpd":30,"reachable":0,"balance_thb":83400.0,"p_pay":0.2413,"rate_if_pay":0.1755,"rho":0.0423},{"account_id":"TH0030","grade":"C","sub_grade":"C3","dpd":120,"reachable":1,"balance_thb":272000.0,"p_pay":0.7715,"rate_if_pay":0.1778,"rho":0.0957},{"account_id":"TH0031","grade":"E","sub_grade":"E3","dpd":180,"reachable":1,"balance_thb":293400.0,"p_pay":0.7281,"rate_if_pay":0.1495,"rho":0.0597},{"account_id":"TH0032","grade":"C","sub_grade":"C1","dpd":120,"reachable":1,"balance_thb":489000.0,"p_pay":0.3543,"rate_if_pay":0.1373,"rho":0.034},{"account_id":"TH0033","grade":"C","sub_grade":"C5","dpd":60,"reachable":1,"balance_thb":211200.0,"p_pay":0.9306,"rate_if_pay":0.1102,"rho":0.091},{"account_id":"TH0034","grade":"F","sub_grade":"F2","dpd":30,"reachable":0,"balance_thb":1064700.0,"p_pay":0.7803,"rate_if_pay":0.1558,"rho":0.1216},{"account_id":"TH0035","grade":"F","sub_grade":"F1","dpd":120,"reachable":1,"balance_thb":124200.0,"p_pay":0.6932,"rate_if_pay":0.1771,"rho":0.0856},{"account_id":"TH0036","grade":"C","sub_grade":"C1","dpd":60,"reachable":1,"balance_thb":99700.0,"p_pay":0.7448,"rate_if_pay":0.1512,"rho":0.0999},{"account_id":"TH0037","grade":"C","sub_grade":"C3","dpd":60,"reachable":1,"balance_thb":138000.0,"p_pay":0.9074,"rate_if_pay":0.1268,"rho":0.1021},{"account_id":"TH0038","grade":"A","sub_grade":"A2","dpd":90,"reachable":1,"balance_thb":262600.0,"p_pay":0.2316,"rate_if_pay":0.1573,"rho":0.0287},{"account_id":"TH0039","grade":"C","sub_grade":"C3","dpd":90,"reachable":1,"balance_thb":446800.0,"p_pay":0.9279,"rate_if_pay":0.1558,"rho":0.1137},{"account_id":"TH0040","grade":"D","sub_grade":"D3","dpd":30,"reachable":1,"balance_thb":675100.0,"p_pay":0.63,"rate_if_pay":0.1424,"rho":0.0897},{"account_id":"TH0041","grade":"E","sub_grade":"E1","dpd":180,"reachable":1,"balance_thb":1061700.0,"p_pay":0.7593,"rate_if_pay":0.1439,"rho":0.06},{"account_id":"TH0042","grade":"A","sub_grade":"A4","dpd":120,"reachable":1,"balance_thb":99400.0,"p_pay":0.9782,"rate_if_pay":0.1044,"rho":0.0712},{"account_id":"TH0043","grade":"C","sub_grade":"C3","dpd":120,"reachable":1,"balance_thb":272300.0,"p_pay":0.2434,"rate_if_pay":0.1542,"rho":0.0262},{"account_id":"TH0044","grade":"F","sub_grade":"F1","dpd":120,"reachable":1,"balance_thb":375100.0,"p_pay":0.928,"rate_if_pay":0.1571,"rho":0.1017},{"account_id":"TH0045","grade":"C","sub_grade":"C3","dpd":30,"reachable":1,"balance_thb":572400.0,"p_pay":0.6571,"rate_if_pay":0.1592,"rho":0.1046},{"account_id":"TH0046","grade":"C","sub_grade":"C3","dpd":90,"reachable":1,"balance_thb":272500.0,"p_pay":0.7322,"rate_if_pay":0.1666,"rho":0.096},{"account_id":"TH0047","grade":"C","sub_grade":"C1","dpd":180,"reachable":1,"balance_thb":252800.0,"p_pay":0.253,"rate_if_pay":0.15,"rho":0.0208},{"account_id":"TH0048","grade":"D","sub_grade":"D2","dpd":120,"reachable":1,"balance_thb":422300.0,"p_pay":0.7856,"rate_if_pay":0.1411,"rho":0.0773},{"account_id":"TH0049","grade":"D","sub_grade":"D2","dpd":180,"reachable":1,"balance_thb":303100.0,"p_pay":0.8261,"rate_if_pay":0.1762,"rho":0.0799},{"account_id":"TH0050","grade":"D","sub_grade":"D4","dpd":180,"reachable":1,"balance_thb":397400.0,"p_pay":0.4452,"rate_if_pay":0.1375,"rho":0.0336},{"account_id":"TH0051","grade":"C","sub_grade":"C5","dpd":60,"reachable":1,"balance_thb":25700.0,"p_pay":0.9787,"rate_if_pay":0.1242,"rho":0.1078},{"account_id":"TH0052","grade":"C","sub_grade":"C4","dpd":120,"reachable":1,"balance_thb":607600.0,"p_pay":0.7447,"rate_if_pay":0.1601,"rho":0.0832},{"account_id":"TH0053","grade":"E","sub_grade":"E1","dpd":90,"reachable":1,"balance_thb":738600.0,"p_pay":0.7804,"rate_if_pay":0.1486,"rho":0.0912},{"account_id":"TH0054","grade":"D","sub_grade":"D5","dpd":30,"reachable":1,"balance_thb":72100.0,"p_pay":0.9968,"rate_if_pay":0.0801,"rho":0.0799},{"account_id":"TH0055","grade":"F","sub_grade":"F1","dpd":60,"reachable":0,"balance_thb":594000.0,"p_pay":0.9801,"rate_if_pay":0.1055,"rho":0.0917},{"account_id":"TH0056","grade":"A","sub_grade":"A4","dpd":120,"reachable":1,"balance_thb":627000.0,"p_pay":0.5431,"rate_if_pay":0.136,"rho":0.0515},{"account_id":"TH0057","grade":"B","sub_grade":"B5","dpd":90,"reachable":1,"balance_thb":343900.0,"p_pay":0.8235,"rate_if_pay":0.1565,"rho":0.1014},{"account_id":"TH0058","grade":"D","sub_grade":"D4","dpd":120,"reachable":1,"balance_thb":375000.0,"p_pay":0.7661,"rate_if_pay":0.1391,"rho":0.0744},{"account_id":"TH0059","grade":"B","sub_grade":"B5","dpd":120,"reachable":1,"balance_thb":165800.0,"p_pay":0.1109,"rate_if_pay":0.1548,"rho":0.012},{"account_id":"TH0060","grade":"E","sub_grade":"E1","dpd":60,"reachable":1,"balance_thb":412100.0,"p_pay":0.9326,"rate_if_pay":0.149,"rho":0.1232},{"account_id":"TH0061","grade":"F","sub_grade":"F4","dpd":120,"reachable":1,"balance_thb":883900.0,"p_pay":0.8226,"rate_if_pay":0.1914,"rho":0.1099},{"account_id":"TH0062","grade":"D","sub_grade":"D3","dpd":90,"reachable":1,"balance_thb":174300.0,"p_pay":0.9101,"rate_if_pay":0.1186,"rho":0.0849},{"account_id":"TH0063","grade":"D","sub_grade":"D1","dpd":60,"reachable":0,"balance_thb":185300.0,"p_pay":0.6752,"rate_if_pay":0.1558,"rho":0.0933},{"account_id":"TH0064","grade":"A","sub_grade":"A5","dpd":60,"reachable":1,"balance_thb":242300.0,"p_pay":0.652,"rate_if_pay":0.1742,"rho":0.1007},{"account_id":"TH0065","grade":"D","sub_grade":"D2","dpd":30,"reachable":1,"balance_thb":321700.0,"p_pay":0.2357,"rate_if_pay":0.1815,"rho":0.0428},{"account_id":"TH0066","grade":"F","sub_grade":"F3","dpd":90,"reachable":1,"balance_thb":666900.0,"p_pay":0.8066,"rate_if_pay":0.1755,"rho":0.1113},{"account_id":"TH0067","grade":"B","sub_grade":"B5","dpd":60,"reachable":1,"balance_thb":186000.0,"p_pay":0.6839,"rate_if_pay":0.1622,"rho":0.0984},{"account_id":"TH0068","grade":"D","sub_grade":"D1","dpd":120,"reachable":0,"balance_thb":40700.0,"p_pay":0.2097,"rate_if_pay":0.1523,"rho":0.0223},{"account_id":"TH0069","grade":"G","sub_grade":"G5","dpd":60,"reachable":1,"balance_thb":504100.0,"p_pay":0.6915,"rate_if_pay":0.1512,"rho":0.0927},{"account_id":"TH0070","grade":"D","sub_grade":"D4","dpd":60,"reachable":1,"balance_thb":658700.0,"p_pay":0.8973,"rate_if_pay":0.1786,"rho":0.1422},{"account_id":"TH0071","grade":"C","sub_grade":"C1","dpd":60,"reachable":1,"balance_thb":306600.0,"p_pay":0.5942,"rate_if_pay":0.1558,"rho":0.0821},{"account_id":"TH0072","grade":"B","sub_grade":"B5","dpd":180,"reachable":0,"balance_thb":523200.0,"p_pay":0.8388,"rate_if_pay":0.1542,"rho":0.071},{"account_id":"TH0073","grade":"B","sub_grade":"B1","dpd":30,"reachable":0,"balance_thb":199500.0,"p_pay":0.9137,"rate_if_pay":0.1243,"rho":0.1136},{"account_id":"TH0074","grade":"B","sub_grade":"B5","dpd":90,"reachable":1,"balance_thb":60000.0,"p_pay":0.1038,"rate_if_pay":0.1919,"rho":0.0157},{"account_id":"TH0075","grade":"B","sub_grade":"B2","dpd":60,"reachable":1,"balance_thb":331200.0,"p_pay":0.6717,"rate_if_pay":0.1555,"rho":0.0926},{"account_id":"TH0076","grade":"B","sub_grade":"B2","dpd":120,"reachable":1,"balance_thb":52000.0,"p_pay":0.6357,"rate_if_pay":0.1845,"rho":0.0818},{"account_id":"TH0077","grade":"B","sub_grade":"B5","dpd":120,"reachable":0,"balance_thb":47900.0,"p_pay":0.6315,"rate_if_pay":0.1906,"rho":0.084},{"account_id":"TH0078","grade":"D","sub_grade":"D4","dpd":90,"reachable":1,"balance_thb":357800.0,"p_pay":0.7783,"rate_if_pay":0.1546,"rho":0.0947},{"account_id":"TH0079","grade":"C","sub_grade":"C4","dpd":60,"reachable":1,"balance_thb":202500.0,"p_pay":0.7912,"rate_if_pay":0.1912,"rho":0.1342},{"account_id":"TH0080","grade":"C","sub_grade":"C5","dpd":120,"reachable":1,"balance_thb":523300.0,"p_pay":0.4851,"rate_if_pay":0.1318,"rho":0.0446},{"account_id":"TH0081","grade":"C","sub_grade":"C4","dpd":60,"reachable":0,"balance_thb":116100.0,"p_pay":0.7313,"rate_if_pay":0.1724,"rho":0.1118},{"account_id":"TH0082","grade":"C","sub_grade":"C5","dpd":30,"reachable":1,"balance_thb":461300.0,"p_pay":0.6565,"rate_if_pay":0.1619,"rho":0.1063},{"account_id":"TH0083","grade":"B","sub_grade":"B2","dpd":30,"reachable":0,"balance_thb":164000.0,"p_pay":0.6985,"rate_if_pay":0.1554,"rho":0.1085},{"account_id":"TH0084","grade":"E","sub_grade":"E4","dpd":180,"reachable":0,"balance_thb":254500.0,"p_pay":0.5346,"rate_if_pay":0.1635,"rho":0.048},{"account_id":"TH0085","grade":"G","sub_grade":"G2","dpd":180,"reachable":1,"balance_thb":151800.0,"p_pay":0.2445,"rate_if_pay":0.1821,"rho":0.0244},{"account_id":"TH0086","grade":"C","sub_grade":"C3","dpd":90,"reachable":0,"balance_thb":156300.0,"p_pay":0.7104,"rate_if_pay":0.1594,"rho":0.0891},{"account_id":"TH0087","grade":"C","sub_grade":"C2","dpd":60,"reachable":1,"balance_thb":321300.0,"p_pay":0.4917,"rate_if_pay":0.1409,"rho":0.0614},{"account_id":"TH0088","grade":"B","sub_grade":"B2","dpd":30,"reachable":1,"balance_thb":262500.0,"p_pay":0.573,"rate_if_pay":0.1674,"rho":0.0959},{"account_id":"TH0089","grade":"C","sub_grade":"C2","dpd":90,"reachable":1,"balance_thb":883200.0,"p_pay":0.748,"rate_if_pay":0.1481,"rho":0.0871},{"account_id":"TH0090","grade":"B","sub_grade":"B4","dpd":180,"reachable":1,"balance_thb":454900.0,"p_pay":0.4018,"rate_if_pay":0.1577,"rho":0.0348},{"account_id":"TH0091","grade":"B","sub_grade":"B1","dpd":60,"reachable":1,"balance_thb":196500.0,"p_pay":0.4376,"rate_if_pay":0.1502,"rho":0.0583},{"account_id":"TH0092","grade":"A","sub_grade":"A2","dpd":90,"reachable":1,"balance_thb":190700.0,"p_pay":0.5922,"rate_if_pay":0.1996,"rho":0.093},{"account_id":"TH0093","grade":"A","sub_grade":"A2","dpd":180,"reachable":1,"balance_thb":231200.0,"p_pay":0.5734,"rate_if_pay":0.2242,"rho":0.0705},{"account_id":"TH0094","grade":"C","sub_grade":"C1","dpd":30,"reachable":1,"balance_thb":73800.0,"p_pay":0.109,"rate_if_pay":0.1641,"rho":0.0179},{"account_id":"TH0095","grade":"C","sub_grade":"C5","dpd":60,"reachable":1,"balance_thb":460300.0,"p_pay":0.6927,"rate_if_pay":0.1401,"rho":0.0861},{"account_id":"TH0096","grade":"B","sub_grade":"B1","dpd":30,"reachable":1,"balance_thb":97900.0,"p_pay":0.9114,"rate_if_pay":0.1616,"rho":0.1473},{"account_id":"TH0097","grade":"C","sub_grade":"C2","dpd":60,"reachable":0,"balance_thb":288100.0,"p_pay":0.9821,"rate_if_pay":0.1226,"rho":0.1068},{"account_id":"TH0098","grade":"A","sub_grade":"A2","dpd":30,"reachable":1,"balance_thb":272600.0,"p_pay":0.98,"rate_if_pay":0.0772,"rho":0.0757},{"account_id":"TH0099","grade":"G","sub_grade":"G4","dpd":60,"reachable":1,"balance_thb":827000.0,"p_pay":0.2714,"rate_if_pay":0.1262,"rho":0.0304},{"account_id":"TH0100","grade":"E","sub_grade":"E5","dpd":90,"reachable":0,"balance_thb":643600.0,"p_pay":0.2953,"rate_if_pay":0.137,"rho":0.0318},{"account_id":"TH0101","grade":"D","sub_grade":"D5","dpd":60,"reachable":1,"balance_thb":173000.0,"p_pay":0.9921,"rate_if_pay":0.0874,"rho":0.0769},{"account_id":"TH0102","grade":"A","sub_grade":"A5","dpd":120,"reachable":1,"balance_thb":482200.0,"p_pay":0.6307,"rate_if_pay":0.2134,"rho":0.0939},{"account_id":"TH0103","grade":"F","sub_grade":"F4","dpd":180,"reachable":1,"balance_thb":352200.0,"p_pay":0.6064,"rate_if_pay":0.1417,"rho":0.0471},{"account_id":"TH0104","grade":"C","sub_grade":"C4","dpd":60,"reachable":1,"balance_thb":322500.0,"p_pay":0.263,"rate_if_pay":0.143,"rho":0.0333},{"account_id":"TH0105","grade":"F","sub_grade":"F3","dpd":60,"reachable":1,"balance_thb":462400.0,"p_pay":0.8899,"rate_if_pay":0.1447,"rho":0.1142},{"account_id":"TH0106","grade":"C","sub_grade":"C5","dpd":90,"reachable":1,"balance_thb":484300.0,"p_pay":0.4897,"rate_if_pay":0.1528,"rho":0.0589},{"account_id":"TH0107","grade":"A","sub_grade":"A4","dpd":30,"reachable":1,"balance_thb":177500.0,"p_pay":0.4574,"rate_if_pay":0.1625,"rho":0.0743},{"account_id":"TH0108","grade":"D","sub_grade":"D4","dpd":60,"reachable":0,"balance_thb":374300.0,"p_pay":0.6207,"rate_if_pay":0.1559,"rho":0.0858},{"account_id":"TH0109","grade":"C","sub_grade":"C2","dpd":60,"reachable":1,"balance_thb":368500.0,"p_pay":0.5453,"rate_if_pay":0.1759,"rho":0.0851},{"account_id":"TH0110","grade":"E","sub_grade":"E4","dpd":120,"reachable":1,"balance_thb":557400.0,"p_pay":0.6467,"rate_if_pay":0.1428,"rho":0.0644},{"account_id":"TH0111","grade":"D","sub_grade":"D1","dpd":30,"reachable":1,"balance_thb":315500.0,"p_pay":0.4393,"rate_if_pay":0.1553,"rho":0.0682},{"account_id":"TH0112","grade":"B","sub_grade":"B3","dpd":90,"reachable":0,"balance_thb":244300.0,"p_pay":0.7512,"rate_if_pay":0.1553,"rho":0.0918},{"account_id":"TH0113","grade":"D","sub_grade":"D1","dpd":30,"reachable":1,"balance_thb":588100.0,"p_pay":0.7819,"rate_if_pay":0.1549,"rho":0.1211},{"account_id":"TH0114","grade":"G","sub_grade":"G3","dpd":60,"reachable":0,"balance_thb":626200.0,"p_pay":0.9922,"rate_if_pay":0.1325,"rho":0.1166},{"account_id":"TH0115","grade":"F","sub_grade":"F1","dpd":60,"reachable":1,"balance_thb":727000.0,"p_pay":0.9551,"rate_if_pay":0.1437,"rho":0.1218},{"account_id":"TH0116","grade":"C","sub_grade":"C3","dpd":120,"reachable":1,"balance_thb":658100.0,"p_pay":0.6864,"rate_if_pay":0.1353,"rho":0.0648},{"account_id":"TH0117","grade":"D","sub_grade":"D1","dpd":60,"reachable":0,"balance_thb":534600.0,"p_pay":0.397,"rate_if_pay":0.1365,"rho":0.0481},{"account_id":"TH0118","grade":"B","sub_grade":"B5","dpd":120,"reachable":1,"balance_thb":644800.0,"p_pay":0.4013,"rate_if_pay":0.1287,"rho":0.036},{"account_id":"TH0119","grade":"D","sub_grade":"D2","dpd":30,"reachable":1,"balance_thb":537000.0,"p_pay":0.6549,"rate_if_pay":0.1523,"rho":0.0998},{"account_id":"TH0120","grade":"D","sub_grade":"D5","dpd":60,"reachable":1,"balance_thb":394300.0,"p_pay":0.7959,"rate_if_pay":0.1715,"rho":0.1211},{"account_id":"TH0121","grade":"C","sub_grade":"C5","dpd":90,"reachable":1,"balance_thb":361900.0,"p_pay":0.3834,"rate_if_pay":0.1502,"rho":0.0453},{"account_id":"TH0122","grade":"C","sub_grade":"C4","dpd":120,"reachable":1,"balance_thb":200000.0,"p_pay":0.7257,"rate_if_pay":0.1632,"rho":0.0826},{"account_id":"TH0123","grade":"D","sub_grade":"D5","dpd":90,"reachable":0,"balance_thb":928000.0,"p_pay":0.9461,"rate_if_pay":0.1316,"rho":0.0979},{"account_id":"TH0124","grade":"E","sub_grade":"E2","dpd":120,"reachable":0,"balance_thb":273400.0,"p_pay":0.7095,"rate_if_pay":0.1572,"rho":0.0778},{"account_id":"TH0125","grade":"C","sub_grade":"C1","dpd":90,"reachable":1,"balance_thb":461600.0,"p_pay":0.9764,"rate_if_pay":0.1194,"rho":0.0917},{"account_id":"TH0126","grade":"D","sub_grade":"D4","dpd":60,"reachable":1,"balance_thb":295000.0,"p_pay":0.7076,"rate_if_pay":0.1543,"rho":0.0968},{"account_id":"TH0127","grade":"C","sub_grade":"C1","dpd":90,"reachable":1,"balance_thb":181800.0,"p_pay":0.7657,"rate_if_pay":0.1578,"rho":0.095},{"account_id":"TH0128","grade":"G","sub_grade":"G4","dpd":30,"reachable":0,"balance_thb":968200.0,"p_pay":0.8057,"rate_if_pay":0.1355,"rho":0.1092},{"account_id":"TH0129","grade":"C","sub_grade":"C5","dpd":60,"reachable":1,"balance_thb":622800.0,"p_pay":0.7127,"rate_if_pay":0.1388,"rho":0.0877},{"account_id":"TH0130","grade":"D","sub_grade":"D1","dpd":90,"reachable":1,"balance_thb":310900.0,"p_pay":0.9117,"rate_if_pay":0.1383,"rho":0.0992},{"account_id":"TH0131","grade":"E","sub_grade":"E2","dpd":60,"reachable":0,"balance_thb":727000.0,"p_pay":0.7177,"rate_if_pay":0.1525,"rho":0.0971},{"account_id":"TH0132","grade":"E","sub_grade":"E3","dpd":180,"reachable":1,"balance_thb":532600.0,"p_pay":0.9829,"rate_if_pay":0.1667,"rho":0.0899},{"account_id":"TH0133","grade":"B","sub_grade":"B3","dpd":180,"reachable":1,"balance_thb":339400.0,"p_pay":0.9233,"rate_if_pay":0.1258,"rho":0.0638},{"account_id":"TH0134","grade":"C","sub_grade":"C2","dpd":180,"reachable":1,"balance_thb":66400.0,"p_pay":0.2945,"rate_if_pay":0.1634,"rho":0.0264},{"account_id":"TH0135","grade":"F","sub_grade":"F5","dpd":30,"reachable":1,"balance_thb":199600.0,"p_pay":0.9207,"rate_if_pay":0.1531,"rho":0.141},{"account_id":"TH0136","grade":"F","sub_grade":"F2","dpd":120,"reachable":1,"balance_thb":933900.0,"p_pay":0.7648,"rate_if_pay":0.1449,"rho":0.0773},{"account_id":"TH0137","grade":"C","sub_grade":"C1","dpd":30,"reachable":1,"balance_thb":324700.0,"p_pay":0.8078,"rate_if_pay":0.1588,"rho":0.1283},{"account_id":"TH0138","grade":"B","sub_grade":"B1","dpd":180,"reachable":1,"balance_thb":510700.0,"p_pay":0.7668,"rate_if_pay":0.1448,"rho":0.0609},{"account_id":"TH0139","grade":"C","sub_grade":"C1","dpd":30,"reachable":1,"balance_thb":887000.0,"p_pay":0.9179,"rate_if_pay":0.128,"rho":0.1175},{"account_id":"TH0140","grade":"D","sub_grade":"D3","dpd":60,"reachable":0,"balance_thb":543900.0,"p_pay":0.3125,"rate_if_pay":0.1367,"rho":0.0379},{"account_id":"TH0141","grade":"D","sub_grade":"D1","dpd":30,"reachable":1,"balance_thb":210800.0,"p_pay":0.6334,"rate_if_pay":0.1567,"rho":0.0993},{"account_id":"TH0142","grade":"E","sub_grade":"E1","dpd":60,"reachable":1,"balance_thb":86400.0,"p_pay":0.9301,"rate_if_pay":0.1104,"rho":0.0911},{"account_id":"TH0143","grade":"B","sub_grade":"B2","dpd":120,"reachable":1,"balance_thb":180800.0,"p_pay":0.5225,"rate_if_pay":0.1737,"rho":0.0633},{"account_id":"TH0144","grade":"E","sub_grade":"E5","dpd":30,"reachable":1,"balance_thb":568500.0,"p_pay":0.5205,"rate_if_pay":0.1434,"rho":0.0746},{"account_id":"TH0145","grade":"C","sub_grade":"C4","dpd":30,"reachable":1,"balance_thb":461200.0,"p_pay":0.1263,"rate_if_pay":0.1408,"rho":0.0178},{"account_id":"TH0146","grade":"C","sub_grade":"C4","dpd":120,"reachable":1,"balance_thb":465000.0,"p_pay":0.3479,"rate_if_pay":0.1416,"rho":0.0344},{"account_id":"TH0147","grade":"D","sub_grade":"D2","dpd":90,"reachable":1,"balance_thb":415900.0,"p_pay":0.6341,"rate_if_pay":0.1654,"rho":0.0825},{"account_id":"TH0148","grade":"B","sub_grade":"B2","dpd":60,"reachable":0,"balance_thb":328400.0,"p_pay":0.2259,"rate_if_pay":0.1595,"rho":0.032},{"account_id":"TH0149","grade":"B","sub_grade":"B4","dpd":30,"reachable":0,"balance_thb":171900.0,"p_pay":0.7921,"rate_if_pay":0.1633,"rho":0.1294},{"account_id":"TH0150","grade":"B","sub_grade":"B2","dpd":120,"reachable":1,"balance_thb":546600.0,"p_pay":0.8897,"rate_if_pay":0.1709,"rho":0.1061},{"account_id":"TH0151","grade":"F","sub_grade":"F1","dpd":30,"reachable":1,"balance_thb":624300.0,"p_pay":0.939,"rate_if_pay":0.1153,"rho":0.1083},{"account_id":"TH0152","grade":"D","sub_grade":"D4","dpd":90,"reachable":1,"balance_thb":254000.0,"p_pay":0.2312,"rate_if_pay":0.1653,"rho":0.0301},{"account_id":"TH0153","grade":"B","sub_grade":"B3","dpd":90,"reachable":1,"balance_thb":109400.0,"p_pay":0.771,"rate_if_pay":0.2236,"rho":0.1356},{"account_id":"TH0154","grade":"B","sub_grade":"B4","dpd":180,"reachable":1,"balance_thb":26300.0,"p_pay":0.9687,"rate_if_pay":0.1315,"rho":0.0699},{"account_id":"TH0155","grade":"C","sub_grade":"C4","dpd":90,"reachable":1,"balance_thb":357100.0,"p_pay":0.7474,"rate_if_pay":0.1758,"rho":0.1033},{"account_id":"TH0156","grade":"A","sub_grade":"A5","dpd":120,"reachable":1,"balance_thb":891300.0,"p_pay":0.6168,"rate_if_pay":0.1431,"rho":0.0616},{"account_id":"TH0157","grade":"A","sub_grade":"A5","dpd":60,"reachable":0,"balance_thb":115900.0,"p_pay":0.5749,"rate_if_pay":0.2063,"rho":0.1052},{"account_id":"TH0158","grade":"B","sub_grade":"B2","dpd":90,"reachable":1,"balance_thb":238700.0,"p_pay":0.3074,"rate_if_pay":0.1432,"rho":0.0346},{"account_id":"TH0159","grade":"D","sub_grade":"D1","dpd":120,"reachable":1,"balance_thb":778400.0,"p_pay":0.912,"rate_if_pay":0.1664,"rho":0.1059},{"account_id":"TH0160","grade":"E","sub_grade":"E5","dpd":120,"reachable":0,"balance_thb":408100.0,"p_pay":0.7188,"rate_if_pay":0.1427,"rho":0.0716},{"account_id":"TH0161","grade":"C","sub_grade":"C5","dpd":60,"reachable":1,"balance_thb":484100.0,"p_pay":0.7792,"rate_if_pay":0.1366,"rho":0.0944},{"account_id":"TH0162","grade":"B","sub_grade":"B4","dpd":120,"reachable":1,"balance_thb":185800.0,"p_pay":0.81,"rate_if_pay":0.233,"rho":0.1317},{"account_id":"TH0163","grade":"F","sub_grade":"F2","dpd":60,"reachable":1,"balance_thb":155900.0,"p_pay":0.9213,"rate_if_pay":0.1537,"rho":0.1256},{"account_id":"TH0164","grade":"G","sub_grade":"G2","dpd":30,"reachable":1,"balance_thb":773300.0,"p_pay":0.7037,"rate_if_pay":0.1679,"rho":0.1181},{"account_id":"TH0165","grade":"F","sub_grade":"F1","dpd":180,"reachable":0,"balance_thb":750100.0,"p_pay":0.8511,"rate_if_pay":0.1534,"rho":0.0717},{"account_id":"TH0166","grade":"E","sub_grade":"E4","dpd":60,"reachable":1,"balance_thb":956100.0,"p_pay":0.8189,"rate_if_pay":0.147,"rho":0.1067},{"account_id":"TH0167","grade":"D","sub_grade":"D5","dpd":120,"reachable":1,"balance_thb":502500.0,"p_pay":0.676,"rate_if_pay":0.1543,"rho":0.0728},{"account_id":"TH0168","grade":"C","sub_grade":"C5","dpd":90,"reachable":1,"balance_thb":252400.0,"p_pay":0.2196,"rate_if_pay":0.1398,"rho":0.0241},{"account_id":"TH0169","grade":"A","sub_grade":"A1","dpd":120,"reachable":1,"balance_thb":114900.0,"p_pay":0.4765,"rate_if_pay":0.1788,"rho":0.0594},{"account_id":"TH0170","grade":"E","sub_grade":"E1","dpd":120,"reachable":0,"balance_thb":281200.0,"p_pay":0.77,"rate_if_pay":0.142,"rho":0.0763},{"account_id":"TH0171","grade":"C","sub_grade":"C1","dpd":30,"reachable":1,"balance_thb":43300.0,"p_pay":0.3028,"rate_if_pay":0.1549,"rho":0.0469},{"account_id":"TH0172","grade":"E","sub_grade":"E1","dpd":30,"reachable":0,"balance_thb":433800.0,"p_pay":0.6233,"rate_if_pay":0.1554,"rho":0.0969},{"account_id":"TH0173","grade":"E","sub_grade":"E2","dpd":60,"reachable":1,"balance_thb":466200.0,"p_pay":0.6959,"rate_if_pay":0.1722,"rho":0.1063},{"account_id":"TH0174","grade":"D","sub_grade":"D5","dpd":60,"reachable":0,"balance_thb":380500.0,"p_pay":0.7428,"rate_if_pay":0.1601,"rho":0.1055},{"account_id":"TH0175","grade":"G","sub_grade":"G1","dpd":180,"reachable":1,"balance_thb":297900.0,"p_pay":0.5112,"rate_if_pay":0.1628,"rho":0.0457},{"account_id":"TH0176","grade":"B","sub_grade":"B2","dpd":60,"reachable":1,"balance_thb":354000.0,"p_pay":0.9418,"rate_if_pay":0.1617,"rho":0.135},{"account_id":"TH0177","grade":"B","sub_grade":"B4","dpd":120,"reachable":1,"balance_thb":242200.0,"p_pay":0.8091,"rate_if_pay":0.181,"rho":0.1022},{"account_id":"TH0178","grade":"F","sub_grade":"F1","dpd":30,"reachable":1,"balance_thb":974700.0,"p_pay":0.2566,"rate_if_pay":0.1424,"rho":0.0365},{"account_id":"TH0179","grade":"E","sub_grade":"E3","dpd":120,"reachable":1,"balance_thb":423500.0,"p_pay":0.7214,"rate_if_pay":0.1662,"rho":0.0837},{"account_id":"TH0180","grade":"E","sub_grade":"E2","dpd":60,"reachable":1,"balance_thb":181000.0,"p_pay":0.4011,"rate_if_pay":0.1493,"rho":0.0531},{"account_id":"TH0181","grade":"D","sub_grade":"D3","dpd":60,"reachable":1,"balance_thb":120600.0,"p_pay":0.8469,"rate_if_pay":0.1814,"rho":0.1363},{"account_id":"TH0182","grade":"C","sub_grade":"C1","dpd":30,"reachable":0,"balance_thb":180600.0,"p_pay":0.1252,"rate_if_pay":0.1375,"rho":0.0172},{"account_id":"TH0183","grade":"G","sub_grade":"G2","dpd":30,"reachable":0,"balance_thb":635600.0,"p_pay":0.9773,"rate_if_pay":0.0814,"rho":0.0795},{"account_id":"TH0184","grade":"C","sub_grade":"C2","dpd":90,"reachable":1,"balance_thb":230900.0,"p_pay":0.5585,"rate_if_pay":0.1439,"rho":0.0632},{"account_id":"TH0185","grade":"F","sub_grade":"F4","dpd":120,"reachable":1,"balance_thb":456400.0,"p_pay":0.7783,"rate_if_pay":0.1612,"rho":0.0875},{"account_id":"TH0186","grade":"C","sub_grade":"C2","dpd":90,"reachable":1,"balance_thb":477400.0,"p_pay":0.7469,"rate_if_pay":0.1388,"rho":0.0816},{"account_id":"TH0187","grade":"D","sub_grade":"D1","dpd":120,"reachable":1,"balance_thb":241100.0,"p_pay":0.9356,"rate_if_pay":0.1205,"rho":0.0786},{"account_id":"TH0188","grade":"D","sub_grade":"D3","dpd":90,"reachable":1,"balance_thb":185500.0,"p_pay":0.1657,"rate_if_pay":0.1427,"rho":0.0186},{"account_id":"TH0189","grade":"C","sub_grade":"C4","dpd":30,"reachable":1,"balance_thb":287700.0,"p_pay":0.594,"rate_if_pay":0.1513,"rho":0.0899},{"account_id":"TH0190","grade":"B","sub_grade":"B5","dpd":60,"reachable":1,"balance_thb":329300.0,"p_pay":0.7713,"rate_if_pay":0.1504,"rho":0.1029},{"account_id":"TH0191","grade":"C","sub_grade":"C4","dpd":180,"reachable":1,"balance_thb":415300.0,"p_pay":0.5403,"rate_if_pay":0.1395,"rho":0.0414},{"account_id":"TH0192","grade":"D","sub_grade":"D5","dpd":60,"reachable":1,"balance_thb":250500.0,"p_pay":0.6025,"rate_if_pay":0.1606,"rho":0.0858},{"account_id":"TH0193","grade":"A","sub_grade":"A5","dpd":120,"reachable":1,"balance_thb":714100.0,"p_pay":0.981,"rate_if_pay":0.0933,"rho":0.0639},{"account_id":"TH0194","grade":"A","sub_grade":"A5","dpd":30,"reachable":0,"balance_thb":51400.0,"p_pay":0.4312,"rate_if_pay":0.23,"rho":0.0992},{"account_id":"TH0195","grade":"B","sub_grade":"B4","dpd":90,"reachable":1,"balance_thb":192900.0,"p_pay":0.7928,"rate_if_pay":0.1595,"rho":0.0995},{"account_id":"TH0196","grade":"B","sub_grade":"B3","dpd":60,"reachable":1,"balance_thb":181300.0,"p_pay":0.6417,"rate_if_pay":0.16,"rho":0.0911},{"account_id":"TH0197","grade":"B","sub_grade":"B2","dpd":180,"reachable":1,"balance_thb":559100.0,"p_pay":0.1295,"rate_if_pay":0.1427,"rho":0.0101},{"account_id":"TH0198","grade":"D","sub_grade":"D2","dpd":60,"reachable":0,"balance_thb":926700.0,"p_pay":0.105,"rate_if_pay":0.1281,"rho":0.0119},{"account_id":"TH0199","grade":"E","sub_grade":"E4","dpd":120,"reachable":1,"balance_thb":700600.0,"p_pay":0.7605,"rate_if_pay":0.1773,"rho":0.0941},{"account_id":"TH0200","grade":"E","sub_grade":"E5","dpd":120,"reachable":0,"balance_thb":258500.0,"p_pay":0.5611,"rate_if_pay":0.1599,"rho":0.0626},{"account_id":"TH0201","grade":"G","sub_grade":"G2","dpd":30,"reachable":1,"balance_thb":44300.0,"p_pay":0.5845,"rate_if_pay":0.2154,"rho":0.1259},{"account_id":"TH0202","grade":"G","sub_grade":"G1","dpd":30,"reachable":1,"balance_thb":857100.0,"p_pay":0.7483,"rate_if_pay":0.1532,"rho":0.1146},{"account_id":"TH0203","grade":"D","sub_grade":"D3","dpd":180,"reachable":1,"balance_thb":222100.0,"p_pay":0.3188,"rate_if_pay":0.1547,"rho":0.0271},{"account_id":"TH0204","grade":"E","sub_grade":"E3","dpd":120,"reachable":1,"balance_thb":615500.0,"p_pay":0.677,"rate_if_pay":0.1509,"rho":0.0713},{"account_id":"TH0205","grade":"G","sub_grade":"G2","dpd":120,"reachable":0,"balance_thb":300600.0,"p_pay":0.5148,"rate_if_pay":0.1319,"rho":0.0474},{"account_id":"TH0206","grade":"E","sub_grade":"E3","dpd":60,"reachable":1,"balance_thb":507300.0,"p_pay":0.6337,"rate_if_pay":0.1493,"rho":0.0839},{"account_id":"TH0207","grade":"B","sub_grade":"B3","dpd":180,"reachable":1,"balance_thb":825500.0,"p_pay":0.2962,"rate_if_pay":0.1619,"rho":0.0263},{"account_id":"TH0208","grade":"C","sub_grade":"C5","dpd":60,"reachable":1,"balance_thb":187100.0,"p_pay":0.4039,"rate_if_pay":0.1673,"rho":0.0599},{"account_id":"TH0209","grade":"E","sub_grade":"E2","dpd":120,"reachable":1,"balance_thb":666300.0,"p_pay":0.8181,"rate_if_pay":0.1762,"rho":0.1005},{"account_id":"TH0210","grade":"D","sub_grade":"D2","dpd":180,"reachable":1,"balance_thb":197300.0,"p_pay":0.8176,"rate_if_pay":0.1477,"rho":0.0663},{"account_id":"TH0211","grade":"E","sub_grade":"E1","dpd":90,"reachable":1,"balance_thb":411600.0,"p_pay":0.7616,"rate_if_pay":0.1917,"rho":0.1149},{"account_id":"TH0212","grade":"E","sub_grade":"E1","dpd":90,"reachable":1,"balance_thb":165200.0,"p_pay":0.3814,"rate_if_pay":0.1528,"rho":0.0458},{"account_id":"TH0213","grade":"C","sub_grade":"C5","dpd":120,"reachable":1,"balance_thb":315200.0,"p_pay":0.7493,"rate_if_pay":0.153,"rho":0.08},{"account_id":"TH0214","grade":"C","sub_grade":"C5","dpd":90,"reachable":1,"balance_thb":579900.0,"p_pay":0.6332,"rate_if_pay":0.1465,"rho":0.073},{"account_id":"TH0215","grade":"B","sub_grade":"B2","dpd":90,"reachable":1,"balance_thb":128400.0,"p_pay":0.772,"rate_if_pay":0.2487,"rho":0.151},{"account_id":"TH0216","grade":"F","sub_grade":"F1","dpd":60,"reachable":1,"balance_thb":1017200.0,"p_pay":0.7544,"rate_if_pay":0.1712,"rho":0.1146},{"account_id":"TH0217","grade":"E","sub_grade":"E3","dpd":120,"reachable":0,"balance_thb":425400.0,"p_pay":0.743,"rate_if_pay":0.1583,"rho":0.082},{"account_id":"TH0218","grade":"D","sub_grade":"D2","dpd":90,"reachable":1,"balance_thb":191900.0,"p_pay":0.7241,"rate_if_pay":0.1657,"rho":0.0944},{"account_id":"TH0219","grade":"E","sub_grade":"E1","dpd":90,"reachable":1,"balance_thb":127100.0,"p_pay":0.7883,"rate_if_pay":0.1604,"rho":0.0995},{"account_id":"TH0220","grade":"B","sub_grade":"B4","dpd":30,"reachable":0,"balance_thb":115900.0,"p_pay":0.2992,"rate_if_pay":0.1543,"rho":0.0462},{"account_id":"TH0221","grade":"G","sub_grade":"G2","dpd":60,"reachable":1,"balance_thb":228600.0,"p_pay":0.7143,"rate_if_pay":0.1732,"rho":0.1097},{"account_id":"TH0222","grade":"B","sub_grade":"B4","dpd":30,"reachable":1,"balance_thb":42700.0,"p_pay":0.5504,"rate_if_pay":0.1885,"rho":0.1037},{"account_id":"TH0223","grade":"D","sub_grade":"D5","dpd":180,"reachable":1,"balance_thb":439200.0,"p_pay":0.6893,"rate_if_pay":0.181,"rho":0.0685},{"account_id":"TH0224","grade":"D","sub_grade":"D5","dpd":120,"reachable":1,"balance_thb":1023900.0,"p_pay":0.4533,"rate_if_pay":0.1446,"rho":0.0457},{"account_id":"TH0225","grade":"E","sub_grade":"E1","dpd":60,"reachable":1,"balance_thb":318300.0,"p_pay":0.4838,"rate_if_pay":0.1515,"rho":0.065},{"account_id":"TH0226","grade":"C","sub_grade":"C1","dpd":90,"reachable":1,"balance_thb":219000.0,"p_pay":0.4243,"rate_if_pay":0.1647,"rho":0.055},{"account_id":"TH0227","grade":"G","sub_grade":"G2","dpd":90,"reachable":0,"balance_thb":1136800.0,"p_pay":0.7145,"rate_if_pay":0.1492,"rho":0.0839},{"account_id":"TH0228","grade":"E","sub_grade":"E5","dpd":60,"reachable":1,"balance_thb":211800.0,"p_pay":0.6295,"rate_if_pay":0.1836,"rho":0.1025},{"account_id":"TH0229","grade":"D","sub_grade":"D4","dpd":90,"reachable":1,"balance_thb":388900.0,"p_pay":0.7181,"rate_if_pay":0.1906,"rho":0.1077},{"account_id":"TH0230","grade":"C","sub_grade":"C2","dpd":120,"reachable":1,"balance_thb":91800.0,"p_pay":0.7524,"rate_if_pay":0.1709,"rho":0.0897},{"account_id":"TH0231","grade":"D","sub_grade":"D3","dpd":30,"reachable":1,"balance_thb":795200.0,"p_pay":0.859,"rate_if_pay":0.1529,"rho":0.1313},{"account_id":"TH0232","grade":"B","sub_grade":"B5","dpd":90,"reachable":0,"balance_thb":224100.0,"p_pay":0.8524,"rate_if_pay":0.1969,"rho":0.132},{"account_id":"TH0233","grade":"B","sub_grade":"B4","dpd":180,"reachable":1,"balance_thb":25700.0,"p_pay":0.4092,"rate_if_pay":0.2211,"rho":0.0497},{"account_id":"TH0234","grade":"A","sub_grade":"A2","dpd":180,"reachable":1,"balance_thb":271400.0,"p_pay":0.538,"rate_if_pay":0.2027,"rho":0.0598},{"account_id":"TH0235","grade":"D","sub_grade":"D2","dpd":60,"reachable":1,"balance_thb":591300.0,"p_pay":0.6104,"rate_if_pay":0.1585,"rho":0.0858},{"account_id":"TH0236","grade":"F","sub_grade":"F2","dpd":30,"reachable":0,"balance_thb":274000.0,"p_pay":0.7058,"rate_if_pay":0.1495,"rho":0.1055},{"account_id":"TH0237","grade":"C","sub_grade":"C4","dpd":60,"reachable":1,"balance_thb":252800.0,"p_pay":0.5016,"rate_if_pay":0.1394,"rho":0.062},{"account_id":"TH0238","grade":"D","sub_grade":"D5","dpd":60,"reachable":1,"balance_thb":343800.0,"p_pay":0.7599,"rate_if_pay":0.1694,"rho":0.1142},{"account_id":"TH0239","grade":"D","sub_grade":"D1","dpd":180,"reachable":1,"balance_thb":389700.0,"p_pay":0.5747,"rate_if_pay":0.1427,"rho":0.045},{"account_id":"TH0240","grade":"C","sub_grade":"C4","dpd":30,"reachable":0,"balance_thb":130600.0,"p_pay":0.7533,"rate_if_pay":0.1713,"rho":0.129},{"account_id":"TH0241","grade":"A","sub_grade":"A4","dpd":120,"reachable":0,"balance_thb":52100.0,"p_pay":0.6663,"rate_if_pay":0.1913,"rho":0.0889},{"account_id":"TH0242","grade":"F","sub_grade":"F4","dpd":60,"reachable":0,"balance_thb":654800.0,"p_pay":0.7437,"rate_if_pay":0.1399,"rho":0.0923},{"account_id":"TH0243","grade":"B","sub_grade":"B3","dpd":30,"reachable":1,"balance_thb":153400.0,"p_pay":0.9786,"rate_if_pay":0.0738,"rho":0.0722},{"account_id":"TH0244","grade":"D","sub_grade":"D3","dpd":30,"reachable":1,"balance_thb":795900.0,"p_pay":0.535,"rate_if_pay":0.1549,"rho":0.0829},{"account_id":"TH0245","grade":"D","sub_grade":"D5","dpd":30,"reachable":0,"balance_thb":112800.0,"p_pay":0.4386,"rate_if_pay":0.1673,"rho":0.0734},{"account_id":"TH0246","grade":"C","sub_grade":"C3","dpd":30,"reachable":1,"balance_thb":852900.0,"p_pay":0.649,"rate_if_pay":0.1562,"rho":0.1013},{"account_id":"TH0247","grade":"F","sub_grade":"F3","dpd":30,"reachable":1,"balance_thb":734300.0,"p_pay":0.4108,"rate_if_pay":0.1442,"rho":0.0592},{"account_id":"TH0248","grade":"C","sub_grade":"C5","dpd":90,"reachable":1,"balance_thb":936800.0,"p_pay":0.8474,"rate_if_pay":0.1536,"rho":0.1024},{"account_id":"TH0249","grade":"C","sub_grade":"C5","dpd":30,"reachable":1,"balance_thb":41000.0,"p_pay":0.6536,"rate_if_pay":0.1709,"rho":0.1117},{"account_id":"TH0250","grade":"E","sub_grade":"E1","dpd":60,"reachable":1,"balance_thb":959000.0,"p_pay":0.843,"rate_if_pay":0.1732,"rho":0.1295},{"account_id":"TH0251","grade":"C","sub_grade":"C5","dpd":30,"reachable":1,"balance_thb":359200.0,"p_pay":0.6862,"rate_if_pay":0.1594,"rho":0.1094},{"account_id":"TH0252","grade":"C","sub_grade":"C1","dpd":120,"reachable":1,"balance_thb":895900.0,"p_pay":0.8087,"rate_if_pay":0.1455,"rho":0.0821},{"account_id":"TH0253","grade":"D","sub_grade":"D2","dpd":60,"reachable":0,"balance_thb":322300.0,"p_pay":0.7559,"rate_if_pay":0.1919,"rho":0.1286},{"account_id":"TH0254","grade":"C","sub_grade":"C5","dpd":90,"reachable":1,"balance_thb":399900.0,"p_pay":0.2786,"rate_if_pay":0.1455,"rho":0.0319},{"account_id":"TH0255","grade":"A","sub_grade":"A1","dpd":90,"reachable":0,"balance_thb":506900.0,"p_pay":0.5374,"rate_if_pay":0.1837,"rho":0.0776},{"account_id":"TH0256","grade":"B","sub_grade":"B4","dpd":60,"reachable":1,"balance_thb":270100.0,"p_pay":0.8302,"rate_if_pay":0.1451,"rho":0.1068},{"account_id":"TH0257","grade":"B","sub_grade":"B2","dpd":30,"reachable":1,"balance_thb":89400.0,"p_pay":0.3657,"rate_if_pay":0.1696,"rho":0.062},{"account_id":"TH0258","grade":"C","sub_grade":"C2","dpd":60,"reachable":1,"balance_thb":269100.0,"p_pay":0.9749,"rate_if_pay":0.1289,"rho":0.1114},{"account_id":"TH0259","grade":"B","sub_grade":"B3","dpd":30,"reachable":1,"balance_thb":84600.0,"p_pay":0.9941,"rate_if_pay":0.0617,"rho":0.0613},{"account_id":"TH0260","grade":"E","sub_grade":"E1","dpd":180,"reachable":0,"balance_thb":1077000.0,"p_pay":0.7724,"rate_if_pay":0.163,"rho":0.0691},{"account_id":"TH0261","grade":"F","sub_grade":"F1","dpd":30,"reachable":0,"balance_thb":566000.0,"p_pay":0.7756,"rate_if_pay":0.1567,"rho":0.1215},{"account_id":"TH0262","grade":"D","sub_grade":"D1","dpd":30,"reachable":0,"balance_thb":285100.0,"p_pay":0.9127,"rate_if_pay":0.1207,"rho":0.1102},{"account_id":"TH0263","grade":"C","sub_grade":"C5","dpd":30,"reachable":1,"balance_thb":735900.0,"p_pay":0.2071,"rate_if_pay":0.1462,"rho":0.0303},{"account_id":"TH0264","grade":"A","sub_grade":"A5","dpd":180,"reachable":1,"balance_thb":544300.0,"p_pay":0.6461,"rate_if_pay":0.1889,"rho":0.067},{"account_id":"TH0265","grade":"A","sub_grade":"A4","dpd":30,"reachable":1,"balance_thb":131600.0,"p_pay":0.7953,"rate_if_pay":0.3089,"rho":0.2457},{"account_id":"TH0266","grade":"D","sub_grade":"D1","dpd":30,"reachable":1,"balance_thb":203800.0,"p_pay":0.4909,"rate_if_pay":0.1855,"rho":0.091},{"account_id":"TH0267","grade":"C","sub_grade":"C3","dpd":60,"reachable":1,"balance_thb":1258000.0,"p_pay":0.8332,"rate_if_pay":0.1531,"rho":0.1132},{"account_id":"TH0268","grade":"E","sub_grade":"E3","dpd":180,"reachable":0,"balance_thb":758100.0,"p_pay":0.6707,"rate_if_pay":0.1536,"rho":0.0565},{"account_id":"TH0269","grade":"C","sub_grade":"C1","dpd":60,"reachable":1,"balance_thb":29200.0,"p_pay":0.9142,"rate_if_pay":0.1385,"rho":0.1123},{"account_id":"TH0270","grade":"F","sub_grade":"F1","dpd":60,"reachable":1,"balance_thb":661000.0,"p_pay":0.799,"rate_if_pay":0.177,"rho":0.1254},{"account_id":"TH0271","grade":"D","sub_grade":"D4","dpd":30,"reachable":1,"balance_thb":154200.0,"p_pay":0.4206,"rate_if_pay":0.1438,"rho":0.0605},{"account_id":"TH0272","grade":"E","sub_grade":"E1","dpd":60,"reachable":1,"balance_thb":331700.0,"p_pay":0.202,"rate_if_pay":0.1512,"rho":0.0271},{"account_id":"TH0273","grade":"D","sub_grade":"D1","dpd":90,"reachable":1,"balance_thb":568400.0,"p_pay":0.6917,"rate_if_pay":0.1509,"rho":0.0821},{"account_id":"TH0274","grade":"B","sub_grade":"B2","dpd":60,"reachable":1,"balance_thb":514200.0,"p_pay":0.7707,"rate_if_pay":0.1772,"rho":0.1211},{"account_id":"TH0275","grade":"D","sub_grade":"D5","dpd":30,"reachable":1,"balance_thb":259200.0,"p_pay":0.406,"rate_if_pay":0.1553,"rho":0.0631},{"account_id":"TH0276","grade":"D","sub_grade":"D3","dpd":30,"reachable":1,"balance_thb":380600.0,"p_pay":0.6738,"rate_if_pay":0.144,"rho":0.097},{"account_id":"TH0277","grade":"D","sub_grade":"D2","dpd":60,"reachable":1,"balance_thb":240700.0,"p_pay":0.7199,"rate_if_pay":0.1635,"rho":0.1044},{"account_id":"TH0278","grade":"D","sub_grade":"D3","dpd":30,"reachable":1,"balance_thb":126200.0,"p_pay":0.7309,"rate_if_pay":0.1908,"rho":0.1395},{"account_id":"TH0279","grade":"C","sub_grade":"C1","dpd":180,"reachable":0,"balance_thb":239400.0,"p_pay":0.7019,"rate_if_pay":0.1402,"rho":0.054},{"account_id":"TH0280","grade":"B","sub_grade":"B3","dpd":120,"reachable":0,"balance_thb":529900.0,"p_pay":0.805,"rate_if_pay":0.1667,"rho":0.0936},{"account_id":"TH0281","grade":"E","sub_grade":"E4","dpd":90,"reachable":1,"balance_thb":311500.0,"p_pay":0.6789,"rate_if_pay":0.1651,"rho":0.0882},{"account_id":"TH0282","grade":"C","sub_grade":"C1","dpd":60,"reachable":1,"balance_thb":258600.0,"p_pay":0.6581,"rate_if_pay":0.1593,"rho":0.093},{"account_id":"TH0283","grade":"A","sub_grade":"A2","dpd":60,"reachable":1,"balance_thb":81800.0,"p_pay":0.634,"rate_if_pay":0.21,"rho":0.1181},{"account_id":"TH0284","grade":"E","sub_grade":"E4","dpd":120,"reachable":1,"balance_thb":1108700.0,"p_pay":0.8051,"rate_if_pay":0.1488,"rho":0.0836},{"account_id":"TH0285","grade":"C","sub_grade":"C2","dpd":30,"reachable":1,"balance_thb":403200.0,"p_pay":0.721,"rate_if_pay":0.1523,"rho":0.1098},{"account_id":"TH0286","grade":"D","sub_grade":"D4","dpd":90,"reachable":1,"balance_thb":861900.0,"p_pay":0.7789,"rate_if_pay":0.1463,"rho":0.0896},{"account_id":"TH0287","grade":"B","sub_grade":"B3","dpd":30,"reachable":1,"balance_thb":393200.0,"p_pay":0.8176,"rate_if_pay":0.1726,"rho":0.1411},{"account_id":"TH0288","grade":"D","sub_grade":"D3","dpd":60,"reachable":1,"balance_thb":1080700.0,"p_pay":0.808,"rate_if_pay":0.1731,"rho":0.124},{"account_id":"TH0289","grade":"E","sub_grade":"E4","dpd":120,"reachable":1,"balance_thb":525000.0,"p_pay":0.8048,"rate_if_pay":0.1549,"rho":0.087},{"account_id":"TH0290","grade":"B","sub_grade":"B2","dpd":30,"reachable":1,"balance_thb":103800.0,"p_pay":0.6149,"rate_if_pay":0.1674,"rho":0.1029},{"account_id":"TH0291","grade":"C","sub_grade":"C1","dpd":60,"reachable":1,"balance_thb":155000.0,"p_pay":0.7451,"rate_if_pay":0.1713,"rho":0.1132},{"account_id":"TH0292","grade":"A","sub_grade":"A3","dpd":90,"reachable":1,"balance_thb":304600.0,"p_pay":0.4863,"rate_if_pay":0.2371,"rho":0.0907},{"account_id":"TH0293","grade":"E","sub_grade":"E1","dpd":180,"reachable":0,"balance_thb":504500.0,"p_pay":0.6189,"rate_if_pay":0.1398,"rho":0.0475},{"account_id":"TH0294","grade":"C","sub_grade":"C2","dpd":30,"reachable":1,"balance_thb":441100.0,"p_pay":0.6744,"rate_if_pay":0.168,"rho":0.1133},{"account_id":"TH0295","grade":"E","sub_grade":"E4","dpd":60,"reachable":1,"balance_thb":353500.0,"p_pay":0.7055,"rate_if_pay":0.1616,"rho":0.1012},{"account_id":"TH0296","grade":"E","sub_grade":"E3","dpd":90,"reachable":1,"balance_thb":392200.0,"p_pay":0.7519,"rate_if_pay":0.1546,"rho":0.0914},{"account_id":"TH0297","grade":"C","sub_grade":"C2","dpd":60,"reachable":0,"balance_thb":744200.0,"p_pay":0.7008,"rate_if_pay":0.1579,"rho":0.0981},{"account_id":"TH0298","grade":"F","sub_grade":"F2","dpd":30,"reachable":1,"balance_thb":555600.0,"p_pay":0.7289,"rate_if_pay":0.1394,"rho":0.1016},{"account_id":"TH0299","grade":"F","sub_grade":"F4","dpd":30,"reachable":0,"balance_thb":493500.0,"p_pay":0.9827,"rate_if_pay":0.0939,"rho":0.0923},{"account_id":"TH0300","grade":"E","sub_grade":"E2","dpd":30,"reachable":1,"balance_thb":785600.0,"p_pay":0.7607,"rate_if_pay":0.1635,"rho":0.1243}],"strategies":[{"key":"none","name":"No action / self-cure","lift":0.3,"cost":0,"cost_pct":0.0,"commission":0.0,"hours":0.0},{"key":"sms","name":"SMS + LINE OA reminder","lift":0.55,"cost":25,"cost_pct":0.0,"commission":0.0,"hours":0.0},{"key":"call","name":"In-house call center","lift":1.0,"cost":350,"cost_pct":0.0,"commission":0.0,"hours":0.75},{"key":"field","name":"Field collector visit","lift":1.4,"cost":1800,"cost_pct":0.0,"commission":0.0,"hours":0.0},{"key":"agency","name":"External collection agency","lift":1.7,"cost":500,"cost_pct":0.0,"commission":0.25,"hours":0.0},{"key":"legal","name":"Legal action (law firm)","lift":2.3,"cost":8000,"cost_pct":0.02,"commission":0.0,"hours":0.0}],"cfg":{"budget":150000,"call_hours":12.0,"field_slots":5,"hard_cap":10,"legal_retainer":40000,"legal_min_cases":3,"legal_min_balance":100000,"must_act_dpd":90,"unreachable_factor":0.4,"rate_cap":0.9,"strategy_priority":[1.0,1.0,1.0,1.0,1.0,1.0],"account_priority":"none"},"model":{"n_defaulted_used":260640,"fx_thb_per_usd":33.0,"classifier_auc":0.766,"classifier_auc_grade_only":0.5299,"classifier_brier":0.1722,"rate_mae_given_recovered":0.0767,"expected_rate_mae_all":0.0811,"mean_actual_rate":0.1061,"mean_predicted_rate":0.1061,"pool_size":300,"pool_grade_counts":{"A":25,"B":50,"C":75,"D":65,"E":45,"F":25,"G":15},"N30_total_balance_thb":9037800.0,"grade_profile":[{"grade":"A","n":13621,"mean_ead_thb":268142,"p_recovered":0.5937,"mean_rate":0.1035},{"grade":"B","n":50640,"mean_ead_thb":287813,"p_recovered":0.6615,"mean_rate":0.1048},{"grade":"C","n":82763,"mean_ead_thb":342003,"p_recovered":0.6763,"mean_rate":0.1052},{"grade":"D","n":59324,"mean_ead_thb":391807,"p_recovered":0.6832,"mean_rate":0.106},{"grade":"E","n":35419,"mean_ead_thb":468807,"p_recovered":0.7009,"mean_rate":0.1092},{"grade":"F","n":14323,"mean_ead_thb":531779,"p_recovered":0.7244,"mean_rate":0.1123},{"grade":"G","n":4550,"mean_ead_thb":576353,"p_recovered":0.7215,"mean_rate":0.1111}]},"python":1099661.34325}</script>
+<script>
+const DATA = JSON.parse(document.getElementById("payload").textContent);
+const BASE_FX = DATA.model.fx_thb_per_usd;
+const TH_NAMES = ["ไม่ดำเนินการ", "SMS / LINE", "คอลเซ็นเตอร์", "ลงพื้นที่", "บริษัทติดตามหนี้", "ดำเนินคดี"];
+const K = 6, NONE = 0, SMS = 1, CALL = 2, FIELD = 3, AGENCY = 4, LEGAL = 5;
+const PRESETS = {
+  default: [1, 1, 1, 1, 1, 1],
+  friendly: [1, 1.3, 1.2, 1.0, 0.8, 0.7],
+  aggressive: [0.8, 0.9, 1.0, 1.1, 1.2, 1.3],
+};
+const fmtB = new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB", maximumFractionDigits: 0 });
+const fmtN = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+const thb = v => fmtB.format(Math.round(v));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const sColor = k => css(`--s${k}`);
+const $ = id => document.getElementById(id);
+
+let state, strategies, highs = null, charts = {}, last = null, lastPareto = null;
+
+// ------------------------------------------------------------- UI state
+function resetState() {
+  state = { n: 30, fx: BASE_FX, ...structuredClone(DATA.cfg) };
+  strategies = structuredClone(DATA.strategies).map((s, k) => ({ ...s, enabled: true, priority: DATA.cfg.strategy_priority[k] }));
+  renderInputs();
+}
+const NUM_FIELDS = ["n", "fx", "budget", "call_hours", "field_slots", "hard_cap", "legal_retainer", "legal_min_cases", "legal_min_balance", "must_act_dpd"];
+function renderInputs() {
+  NUM_FIELDS.forEach(f => $(f).value = state[f]);
+  $("account_priority").value = state.account_priority;
+  $("strat-table").innerHTML = strategies.map((s, k) => `<div class="strat">
+      <div class="strat-head"><label><input type="checkbox" data-k="${k}" data-f="enabled" ${s.enabled ? "checked" : ""}>
+        <span class="dot" style="background:${sColor(k)}"></span>${s.name}</label>
+        <span class="th">${TH_NAMES[k]}${s.cost_pct ? ` · +${s.cost_pct * 100}% of balance` : ""}${s.hours ? ` · ${s.hours} h/account` : ""}</span></div>
+      <div class="strat-grid">
+        <label>Lift<input type="number" step="0.05" data-k="${k}" data-f="lift" value="${s.lift}"></label>
+        <label>Cost ฿<input type="number" step="25" data-k="${k}" data-f="cost" value="${s.cost}"></label>
+        <label>Comm.<input type="number" step="0.05" data-k="${k}" data-f="commission" value="${s.commission}"></label>
+      </div>
+      <div class="strat-pri"><span>Priority π</span><input type="range" min="0.5" max="1.5" step="0.05" data-k="${k}" data-f="priority" value="${s.priority}"><span class="mono" id="pv${k}">${s.priority.toFixed(2)}</span></div>
+    </div>`).join("");
+}
+document.addEventListener("input", e => {
+  const el = e.target;
+  if (NUM_FIELDS.includes(el.id)) state[el.id] = +el.value;
+  else if (el.id === "account_priority") state.account_priority = el.value;
+  else if (el.dataset.k !== undefined) {
+    const s = strategies[+el.dataset.k], f = el.dataset.f;
+    s[f] = f === "enabled" ? el.checked : +el.value;
+    if (f === "priority") $("pv" + el.dataset.k).textContent = s.priority.toFixed(2);
+  }
+  renderFacts();
+});
+document.querySelectorAll("[data-preset]").forEach(b => b.onclick = () => {
+  PRESETS[b.dataset.preset].forEach((p, k) => strategies[k].priority = p);
+  renderInputs();
+});
+
+// ------------------------------------------------------------- model (mirrors src/optimizer.py)
+function accountWeights(acc, mode) {
+  if (mode === "balance") {
+    const b = acc.map(a => a.balance), lo = Math.min(...b), hi = Math.max(...b);
+    return b.map(v => 1 + 0.5 * (v - lo) / (hi - lo + 1e-9));
+  }
+  if (mode === "dpd") return acc.map(a => 1 + 0.5 * (a.dpd - 30) / 150);
+  if (mode === "grade") return acc.map(a => 1 + 0.5 * "ABCDEFG".indexOf(a.grade) / 6);
+  return acc.map(() => 1);
+}
+function buildInstance() {
+  const cfg = { ...state };
+  const acc = DATA.accounts.slice(0, Math.max(5, Math.min(300, cfg.n)))
+    .map(a => ({ ...a, balance: Math.round(a.balance_thb * cfg.fx / BASE_FX / 100) * 100 }));
+  const w = accountWeights(acc, cfg.account_priority);
+  const R = [], C = [], V = [], W = [], allowed = [];
+  acc.forEach((a, i) => {
+    R.push([]); C.push([]); V.push([]); W.push([]); allowed.push([]);
+    strategies.forEach((s, k) => {
+      let r = a.rho * s.lift;
+      if (!a.reachable && (k === SMS || k === CALL)) r *= cfg.unreachable_factor;
+      r = Math.min(r, cfg.rate_cap);
+      const rec = a.balance * r, cost = s.cost + s.cost_pct * a.balance;
+      R[i].push(rec); C[i].push(cost);
+      V[i].push(rec * (1 - s.commission) - cost);
+      W[i].push(w[i] * s.priority * rec * (1 - s.commission) - cost);
+      let ok = s.enabled;
+      if (k === LEGAL && a.balance < cfg.legal_min_balance) ok = false;
+      if (k === NONE && a.dpd >= cfg.must_act_dpd) ok = false;
+      allowed[i].push(ok);
+    });
+    if (!allowed[i].some(Boolean)) allowed[i][SMS] = true; // keep every account assignable
+  });
+  return { cfg, acc, R, C, V, W, allowed, n: acc.length, hours: strategies.map(s => s.hours), phi: strategies.map(s => s.commission) };
+}
+function evaluate(I, a, usePriority = true) {
+  let obj = 0, net = 0, gross = 0, cost = 0, hours = 0, field = 0, hard = 0, legal = 0;
+  const mix = Array(K).fill(0);
+  for (let i = 0; i < I.n; i++) {
+    const k = a[i];
+    obj += usePriority ? I.W[i][k] : I.V[i][k]; net += I.V[i][k];
+    gross += I.R[i][k]; cost += I.C[i][k]; hours += I.hours[k]; mix[k]++;
+    if (k === FIELD) field++; if (k === AGENCY || k === LEGAL) hard++; if (k === LEGAL) legal++;
+  }
+  const y = legal > 0 ? 1 : 0, F = y * I.cfg.legal_retainer;
+  return { objective: obj - F, net: net - F, gross, cost: cost + F, hours, field, hard, legal, y, mix };
+}
+function violation(I, a) {
+  const e = evaluate(I, a), c = I.cfg;
+  let v = Math.max(0, e.cost - c.budget) / 1000;
+  v += Math.max(0, e.hours - c.call_hours) * 10;
+  v += Math.max(0, e.field - c.field_slots) * 10;
+  v += Math.max(0, e.hard - c.hard_cap) * 10;
+  if (e.y && e.legal < c.legal_min_cases) v += (c.legal_min_cases - e.legal) * 10;
+  for (let i = 0; i < I.n; i++) if (!I.allowed[i][a[i]]) v += 100;
+  return v;
+}
+const penalised = (I, a) => evaluate(I, a).objective - 100000 * violation(I, a);
+const allowedList = (I, i) => I.allowed[i].map((ok, k) => ok ? k : -1).filter(k => k >= 0);
+
+// ------------------------------------------------------------- exact MILP via HiGHS (CPLEX LP format)
+function lpModel(I, { relax = false, objective = "W", budget = I.cfg.budget } = {}) {
+  const c = I.cfg, vars = [], term = (v, x) => `${v < 0 ? "-" : "+"} ${Math.abs(v).toFixed(4)} ${x}`;
+  const obj = [], rows = [];
+  for (let i = 0; i < I.n; i++) for (let k = 0; k < K; k++) if (I.allowed[i][k]) {
+    vars.push(`x${i}_${k}`);
+    obj.push(term(I[objective][i][k], `x${i}_${k}`));
+  }
+  if (objective === "W") obj.push(term(-c.legal_retainer, "y"));
+  const has = (i, k) => I.allowed[i][k];
+  for (let i = 0; i < I.n; i++) rows.push(` assign_${i}: ` + allowedList(I, i).map(k => `+ 1 x${i}_${k}`).join(" ") + " = 1");
+  const sum = (pred, coef) => { const t = []; for (let i = 0; i < I.n; i++) for (let k = 0; k < K; k++) if (has(i, k) && pred(k)) { const v = coef(i, k); if (v) t.push(term(v, `x${i}_${k}`)); } return t; };
+  const budgetTerms = sum(() => true, (i, k) => I.C[i][k]); budgetTerms.push(term(c.legal_retainer, "y"));
+  rows.push(` budget: ${budgetTerms.join("\n ")} <= ${budget}`);
+  const callT = sum(k => k === CALL, (i, k) => I.hours[k]);
+  if (callT.length) rows.push(` call_hours: ${callT.join("\n ")} <= ${c.call_hours}`);
+  const fieldT = sum(k => k === FIELD, () => 1);
+  if (fieldT.length) rows.push(` field_slots: ${fieldT.join("\n ")} <= ${c.field_slots}`);
+  const hardT = sum(k => k === AGENCY || k === LEGAL, () => 1);
+  if (hardT.length) rows.push(` hard_cap: ${hardT.join("\n ")} <= ${c.hard_cap}`);
+  const legalT = [];
+  for (let i = 0; i < I.n; i++) if (has(i, LEGAL)) { rows.push(` link_${i}: + 1 x${i}_${LEGAL} - 1 y <= 0`); legalT.push(`- 1 x${i}_${LEGAL}`); }
+  rows.push(` legal_min: + ${c.legal_min_cases} y ${legalT.join(" ")} <= 0`);
+  const bounds = vars.concat("y").map(v => ` 0 <= ${v} <= 1`);
+  return `Maximize\n obj: ${obj.join("\n ")}\nSubject To\n${rows.join("\n")}\nBounds\n${bounds.join("\n")}\n` +
+    (relax ? "" : `General\n ${vars.concat("y").join(" ")}\n`) + "End\n";
+}
+function solveExact(I, opts = {}) {
+  const t = performance.now();
+  const r = highs.solve(lpModel(I, opts), { time_limit: 30 });
+  const ms = performance.now() - t;
+  if (!/Optimal|Time limit/i.test(r.Status)) throw new Error("HiGHS status: " + r.Status);
+  const a = Array(I.n).fill(SMS);
+  for (const [name, col] of Object.entries(r.Columns)) {
+    const m = /^x(\d+)_(\d)$/.exec(name);
+    if (m && col.Primal > 0.5) a[+m[1]] = +m[2];
+  }
+  return { method: "Exact MILP (HiGHS)", a, ms, status: r.Status };
+}
+function shadowPrices(I) {
+  const r = highs.solve(lpModel(I, { relax: true }));
+  const out = {};
+  (r.Rows || []).forEach(row => { if (["budget", "call_hours", "field_slots", "hard_cap"].includes(row.Name)) out[row.Name] = Math.abs(row.Dual); });
+  return { bound: r.ObjectiveValue, duals: out };
+}
+
+// ------------------------------------------------------------- greedy / GA / SA
+function greedy(I) {
+  const t = performance.now();
+  const a = I.allowed.map((row, i) => allowedList(I, i).reduce((b, k) => I.C[i][k] < I.C[i][b] ? k : b, allowedList(I, i)[0]));
+  for (;;) {
+    let best = null;
+    const hasLegal = a.includes(LEGAL);
+    for (let i = 0; i < I.n; i++) for (const k of allowedList(I, i)) {
+      if (k === a[i]) continue;
+      const dv = I.W[i][k] - I.W[i][a[i]];
+      if (dv <= 0 || (k === LEGAL && !hasLegal)) continue;
+      const old = a[i]; a[i] = k;
+      const feas = violation(I, a) === 0; a[i] = old;
+      if (!feas) continue;
+      const ratio = dv / Math.max(I.C[i][k] - I.C[i][a[i]], 1);
+      if (!best || ratio > best[0]) best = [ratio, i, k];
+    }
+    if (!best) break;
+    a[best[1]] = best[2];
+  }
+  return { method: "Greedy (value / cost)", a, ms: performance.now() - t };
+}
+function rng(seed) { let s = seed >>> 0 || 1; return () => ((s = Math.imul(s ^ (s >>> 15), 1 | s) + 0x6d2b79f5 | 0, ((s ^ (s >>> 7)) >>> 0) / 4294967296)); }
+const pick = (r, arr) => arr[Math.floor(r() * arr.length)];
+const tick = () => new Promise(res => setTimeout(res));
+async function ga(I, seed = 1, pop = 120, gens = 400) {
+  const r = rng(seed), t = performance.now(), pm = 1.5 / I.n;
+  let P = Array.from({ length: pop }, () => I.allowed.map((_, i) => pick(r, allowedList(I, i))));
+  P[0] = I.allowed.map(row => row[SMS] ? SMS : CALL);
+  let fit = P.map(a => penalised(I, a));
+  const hist = [];
+  const tour = () => { let b = Math.floor(r() * pop); for (let j = 0; j < 2; j++) { const c = Math.floor(r() * pop); if (fit[c] > fit[b]) b = c; } return P[b]; };
+  for (let g = 0; g < gens; g++) {
+    const order = fit.map((f, i) => i).sort((x, y) => fit[y] - fit[x]);
+    const next = [P[order[0]].slice(), P[order[1]].slice()];
+    while (next.length < pop) {
+      const p1 = tour(), p2 = tour();
+      const child = r() < 0.9 ? p1.map((v, i) => r() < 0.5 ? v : p2[i]) : p1.slice();
+      for (let i = 0; i < I.n; i++) if (r() < pm) child[i] = pick(r, allowedList(I, i));
+      next.push(child);
+    }
+    P = next; fit = P.map(a => penalised(I, a));
+    hist.push(Math.max(...fit));
+    if (g % 25 === 0) { setProgress(g / gens * 0.5 + 0.1); await tick(); }
+  }
+  const bi = fit.indexOf(Math.max(...fit));
+  return { method: "Genetic Algorithm", a: P[bi], ms: performance.now() - t, hist };
+}
+async function sa(I, seed = 1, iters = 60000, T0 = 1e6, alpha = 0.99975) {
+  const r = rng(seed), t = performance.now();
+  let a = I.allowed.map(row => row[SMS] ? SMS : CALL), fa = penalised(I, a), best = a.slice(), fb = fa, T = T0;
+  const hist = [];
+  for (let it = 0; it < iters; it++) {
+    const b = a.slice(), i = Math.floor(r() * I.n);
+    b[i] = pick(r, allowedList(I, i));
+    if (r() < 0.3) { const j = Math.floor(r() * I.n); if (I.allowed[i][a[j]] && I.allowed[j][a[i]]) { b[i] = a[j]; b[j] = a[i]; } }
+    const f = penalised(I, b);
+    if (f >= fa || r() < Math.exp((f - fa) / T)) { a = b; fa = f; if (fa > fb) { best = a.slice(); fb = fa; } }
+    T *= alpha;
+    if (it % 150 === 0) hist.push(fb);
+    if (it % 4000 === 0) { setProgress(0.6 + it / iters * 0.35); await tick(); }
+  }
+  return { method: "Simulated Annealing", a: best, ms: performance.now() - t, hist };
+}
+
+// ------------------------------------------------------------- rendering
+function setProgress(p) { $("prog").style.width = (p * 100).toFixed(0) + "%"; }
+function setStatus(html) { $("status").innerHTML = html; }
+function renderFacts() {
+  const acc = DATA.accounts.slice(0, state.n);
+  const bal = acc.reduce((s, a) => s + a.balance_thb * state.fx / BASE_FX, 0);
+  const rho = acc.reduce((s, a) => s + a.rho, 0) / acc.length;
+  const I = buildInstance();
+  const size = I.allowed.reduce((t, row) => t + Math.log10(row.filter(Boolean).length), 0);
+  $("facts").innerHTML = `
+    <div>Accounts<b>${acc.length}</b></div>
+    <div>Outstanding<b>${thb(bal)}</b></div>
+    <div>Mean ρ<sub>i</sub><b>${(rho * 100).toFixed(1)}%</b></div>
+    <div>Search space Π|K<sub>i</sub>|<b>≈ 10^${size.toFixed(1)}</b></div>
+    <div>Model AUC<b>${DATA.model.classifier_auc}</b></div>`;
+}
+function renderKPIs(I, e) {
+  const bal = I.acc.reduce((s, a) => s + a.balance, 0);
+  $("kpis").innerHTML = [
+    ["Expected net recovery", thb(e.net), "after cost &amp; commission"],
+    ["Expected gross recovery", thb(e.gross), `${(e.gross / bal * 100).toFixed(1)}% of outstanding`],
+    ["Collection cost", thb(e.cost), `budget ${thb(I.cfg.budget)}`],
+    ["Return on cost", (e.net / Math.max(e.cost, 1)).toFixed(1) + "×", "net ฿ per ฿ spent"],
+  ].map(([l, v, s]) => `<div class="kpi"><span>${l}</span><b>${v}</b><em>${s}</em></div>`).join("");
+}
+function renderCompare(I, results, exactObj) {
+  $("cmp").innerHTML = `<tr><th>Method</th><th class="num">Objective (with π, w)</th><th class="num">Net recovery</th><th class="num">Cost</th><th class="num">Gap to exact</th><th class="num">Time</th><th>Feasible</th></tr>` +
+    results.map(r => {
+      const e = evaluate(I, r.a), feas = violation(I, r.a) === 0;
+      const gap = exactObj ? (1 - e.objective / exactObj) * 100 : null;
+      return `<tr><td>${r.method}</td><td class="num">${thb(e.objective)}</td><td class="num">${thb(e.net)}</td><td class="num">${thb(e.cost)}</td>
+        <td class="num">${gap === null ? "—" : gap.toFixed(2) + "%"}</td><td class="num">${r.ms < 1000 ? r.ms.toFixed(0) + " ms" : (r.ms / 1000).toFixed(2) + " s"}</td>
+        <td class="${feas ? "ok" : "bad"}">${feas ? "yes" : "no"}</td></tr>`;
+    }).join("");
+}
+function renderMix(e, n) {
+  $("mix").innerHTML = `<div class="mixbar">${e.mix.map((c, k) => c ? `<div title="${strategies[k].name}: ${c}" style="width:${c / n * 100}%;background:${sColor(k)}"></div>` : "").join("")}</div>` +
+    e.mix.map((c, k) => `<div class="mixrow"><span><span class="dot" style="background:${sColor(k)}"></span>${strategies[k].key}</span>
+      <div class="bar"><i style="width:${c / n * 100}%;background:${sColor(k)}"></i></div><span class="mono" style="text-align:right">${c}</span></div>`).join("") +
+    `<p class="note">Law firm engaged (y): <b>${e.y ? "yes" : "no"}</b> · legal cases ${e.legal}</p>`;
+}
+function renderUtil(I, e, sp) {
+  const c = I.cfg, rows = [
+    ["Budget", e.cost, c.budget, thb, "budget", "per ฿1"],
+    ["Call-center hours", e.hours, c.call_hours, v => v.toFixed(2) + " h", "call_hours", "per hour"],
+    ["Field visits", e.field, c.field_slots, v => v, "field_slots", "per visit"],
+    ["Hard-collection cap", e.hard, c.hard_cap, v => v, "hard_cap", "per account"],
+  ];
+  $("util").innerHTML = rows.map(([l, u, cap, f, key, unit]) => {
+    const p = Math.min(100, u / Math.max(cap, 1e-9) * 100), d = sp?.duals?.[key];
+    return `<div class="util"><div class="row"><span>${l}</span><span class="mono">${f(u)} / ${f(cap)}</span></div>
+      <div class="bar"><i class="${p > 99.5 ? "full" : ""}" style="width:${p}%"></i></div>
+      <div class="row note"><span>shadow price (LP)</span><span class="mono">${d === undefined ? "—" : (key === "budget" ? d.toFixed(3) : thb(d)) + " " + unit}</span></div></div>`;
+  }).join("") + (sp ? `<p class="note">LP-relaxation bound ${thb(sp.bound)}. A resource is worth buying when its shadow price exceeds the price of one more unit (midterm Problem 2 logic).</p>` : "");
+}
+function renderAssign(I, a) {
+  const rows = I.acc.map((acc, i) => ({ acc, k: a[i], rec: I.R[i][a[i]], cost: I.C[i][a[i]], net: I.V[i][a[i]] }));
+  $("assign").innerHTML = `<tr><th>Account</th><th>Grade</th><th class="num">DPD</th><th>Phone</th><th class="num">Balance</th><th class="num">ρ<sub>i</sub></th><th>Strategy</th><th class="num">E[recovery]</th><th class="num">Cost</th><th class="num">Net</th></tr>` +
+    rows.map(r => `<tr><td class="mono">${r.acc.account_id}</td><td>${r.acc.sub_grade}</td><td class="num">${r.acc.dpd}</td><td>${r.acc.reachable ? "reachable" : "<span class='bad'>no</span>"}</td>
+      <td class="num">${thb(r.acc.balance)}</td><td class="num">${(r.acc.rho * 100).toFixed(1)}%</td>
+      <td><span class="chip" style="background:${sColor(r.k)}">${strategies[r.k].key}</span></td>
+      <td class="num">${thb(r.rec)}</td><td class="num">${thb(r.cost)}</td><td class="num">${thb(r.net)}</td></tr>`).join("");
+}
+function chartDefaults() {
+  Chart.defaults.color = css("--muted");
+  Chart.defaults.borderColor = css("--line");
+  Chart.defaults.font.family = "IBM Plex Sans, system-ui, sans-serif";
+}
+function renderConv(gaR, saR, exactObj) {
+  chartDefaults();
+  const pts = (h) => h.map((v, i) => ({ x: i / (h.length - 1) * 100, y: v }));
+  charts.conv?.destroy();
+  const ds = [
+    { label: "GA best", data: pts(gaR.hist), borderColor: sColor(2), pointRadius: 0, borderWidth: 2 },
+    { label: "SA best", data: pts(saR.hist), borderColor: sColor(4), pointRadius: 0, borderWidth: 2 },
+  ];
+  if (exactObj) ds.push({ label: "Exact optimum", data: [{ x: 0, y: exactObj }, { x: 100, y: exactObj }], borderColor: css("--ink"), borderDash: [4, 4], pointRadius: 0, borderWidth: 1 });
+  const ys = ds.flatMap(d => d.data.map(p => p.y)), top = Math.max(...ys);
+  charts.conv = new Chart($("conv"), { type: "line", data: { datasets: ds }, options: {
+    maintainAspectRatio: false, animation: false, parsing: false,
+    scales: { x: { type: "linear", title: { display: true, text: "% of run" }, max: 100 },
+      y: { min: Math.max(Math.min(...ys), top * 0.8), ticks: { callback: v => "฿" + fmtN.format(v / 1000) + "k" } } },
+    plugins: { legend: { labels: { boxWidth: 12 } }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${thb(c.parsed.y)}` } } } } });
+}
+function renderPareto(pts, current) {
+  chartDefaults();
+  charts.par?.destroy();
+  charts.par = new Chart($("par"), { type: "line", data: { datasets: [
+    { label: "Pareto front (gross)", data: pts.map(p => ({ x: p.cost, y: p.gross })), borderColor: sColor(2), backgroundColor: sColor(2), stepped: false, pointRadius: 3 },
+    { label: "Net at that point", data: pts.map(p => ({ x: p.cost, y: p.net })), borderColor: sColor(4), backgroundColor: sColor(4), borderDash: [5, 3], pointRadius: 2 },
+    ...(current ? [{ label: "Current solution", data: [{ x: current.cost, y: current.gross }], type: "scatter", backgroundColor: css("--ink"), pointRadius: 6, pointStyle: "rectRot" }] : []),
+  ] }, options: { maintainAspectRatio: false, animation: false, parsing: false,
+    scales: { x: { type: "linear", title: { display: true, text: "f₂ cost (฿)" }, ticks: { callback: v => fmtN.format(v / 1000) + "k" } },
+      y: { title: { display: true, text: "฿" }, ticks: { callback: v => fmtN.format(v / 1000) + "k" } } },
+    plugins: { legend: { labels: { boxWidth: 12 } }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${thb(c.parsed.y)} @ cost ${thb(c.parsed.x)}` } } } } });
+}
+
+// ------------------------------------------------------------- actions
+async function run() {
+  $("run").disabled = $("pareto").disabled = true;
+  try {
+    const I = buildInstance(), results = [];
+    setProgress(0.02); setStatus("Solving exact MILP…"); await tick();
+    let exact = null, sp = null;
+    if (highs) { exact = solveExact(I); results.push(exact); sp = shadowPrices(I); }
+    setProgress(0.08); setStatus("Greedy heuristic…"); await tick();
+    results.push(greedy(I));
+    setStatus("Genetic algorithm…");
+    const g = await ga(I); results.push(g);
+    setStatus("Simulated annealing…");
+    const s = await sa(I); results.push(s);
+    const exactObj = exact ? evaluate(I, exact.a).objective : null;
+    const feasible = results.filter(r => violation(I, r.a) === 0);
+    const best = feasible.reduce((b, r) => evaluate(I, r.a).objective > evaluate(I, b.a).objective ? r : b, feasible[0] || results[0]);
+    const e = evaluate(I, best.a);
+    renderKPIs(I, e); renderCompare(I, results, exactObj); renderMix(e, I.n); renderUtil(I, e, sp);
+    renderAssign(I, best.a); renderConv(g, s, exactObj);
+    $("cmp-note").innerHTML = `Best feasible: <b>${best.method}</b>. Objective includes priority weights π<sub>k</sub>, w<sub>i</sub>; “Net recovery” is the unweighted THB value.` +
+      (exact ? ` HiGHS status: ${exact.status}.` : " Exact solver unavailable (offline?) — heuristics only.");
+    last = { I, e, g, s, exactObj, a: best.a };
+    document.body.dataset.exact = exactObj ?? "";
+    setProgress(1); setStatus(`<span class="ok">Done.</span> ${I.n} accounts · search space ≈ 10^${I.allowed.reduce((t, r) => t + Math.log10(r.filter(Boolean).length), 0).toFixed(1)}`);
+  } catch (err) {
+    console.error(err); setStatus(`<span class="bad">${err.message}</span>`);
+  } finally { $("run").disabled = $("pareto").disabled = false; }
+}
+async function pareto() {
+  if (!highs) { setStatus("<span class='bad'>Pareto front needs the exact solver.</span>"); return; }
+  $("run").disabled = $("pareto").disabled = true;
+  const saved = strategies.map(s => s.priority), savedAP = state.account_priority;
+  try {
+    strategies.forEach(s => s.priority = 1); state.account_priority = "none";
+    const I = buildInstance();
+    strategies.forEach((s, k) => s.priority = saved[k]); state.account_priority = savedAP;
+    const top = Math.max(I.cfg.budget * 2.5, 50000), pts = [];
+    for (let j = 0; j <= 20; j++) {
+      const eps = top * (0.03 + 0.97 * j / 20);
+      const r = highs.solve(lpModel(I, { objective: "R", budget: eps }), { time_limit: 10 });
+      if (!/Optimal|Time limit/i.test(r.Status)) continue;
+      const a = Array(I.n).fill(SMS);
+      for (const [nm, col] of Object.entries(r.Columns)) { const m = /^x(\d+)_(\d)$/.exec(nm); if (m && col.Primal > 0.5) a[+m[1]] = +m[2]; }
+      const e = evaluate(I, a, false); pts.push({ cost: e.cost, gross: e.gross, net: e.net });
+      setProgress(j / 20); setStatus(`Pareto point ${j + 1} / 21…`); await tick();
+    }
+    const uniq = pts.filter((p, i) => !pts.slice(0, i).some(q => Math.abs(q.cost - p.cost) < 1 && Math.abs(q.gross - p.gross) < 1)).sort((a, b) => a.cost - b.cost);
+    lastPareto = uniq; renderPareto(uniq, last?.e);
+    setStatus(`<span class="ok">Pareto front:</span> ${uniq.length} non-dominated points.`);
+  } catch (err) { console.error(err); setStatus(`<span class="bad">${err.message}</span>`); }
+  finally { strategies.forEach((s, k) => s.priority = saved[k]); state.account_priority = savedAP; $("run").disabled = $("pareto").disabled = false; }
+}
+$("run").onclick = run;
+$("pareto").onclick = pareto;
+$("reset").onclick = () => { resetState(); renderFacts(); };
+$("theme").onclick = () => {
+  const root = document.documentElement, dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+  renderInputs();
+  if (last) { renderMix(last.e, last.I.n); renderAssign(last.I, last.a); renderConv(last.g, last.s, last.exactObj); }
+  if (lastPareto) renderPareto(lastPareto, last?.e);
+};
+
+resetState(); renderFacts();
+(async () => {
+  try {
+    highs = await Module({ locateFile: f => "https://cdn.jsdelivr.net/npm/highs@1.15.3/build/" + f });
+    setStatus("Exact solver (HiGHS) ready. Press <b>Run optimization</b>.");
+  } catch (e) {
+    console.error(e); setStatus("<span class='bad'>Could not load HiGHS (offline?). GA, SA and Greedy still work.</span>");
+  }
+  if (location.hash === "#auto") { await run(); await pareto(); document.body.dataset.done = "1"; }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+account_id,grade,dpd,reachable,balance_thb,rho,strategy,exp_recovery_thb,cost_thb
+TH0001,B,60,1,154000.0,0.132,In-house call center,20328.0,350.0
+TH0002,A,120,1,101900.0,0.031,In-house call center,3159.0,350.0
+TH0003,D,90,1,123900.0,0.0647,In-house call center,8016.0,350.0
+TH0004,D,180,1,435200.0,0.0642,External collection agency,47498.0,500.0
+TH0005,C,60,1,94000.0,0.095,In-house call center,8930.0,350.0
+TH0006,C,120,1,356800.0,0.0886,Field collector visit,44257.0,1800.0
+TH0007,D,180,1,154300.0,0.0113,In-house call center,1744.0,350.0
+TH0008,D,60,0,199800.0,0.0846,External collection agency,28735.0,500.0
+TH0009,F,90,1,891600.0,0.0859,Legal action (law firm),176153.0,25832.0
+TH0010,D,90,1,493500.0,0.0926,Field collector visit,63977.0,1800.0
+TH0011,C,60,1,177700.0,0.0148,In-house call center,2630.0,350.0
+TH0012,D,60,0,421600.0,0.1044,Field collector visit,61621.0,1800.0
+TH0013,G,180,0,330000.0,0.0565,External collection agency,31696.0,500.0
+TH0014,D,90,1,424000.0,0.0598,In-house call center,25355.0,350.0
+TH0015,C,30,1,208600.0,0.1255,In-house call center,26179.0,350.0
+TH0016,A,120,1,41700.0,0.0136,SMS + LINE OA reminder,312.0,25.0
+TH0017,B,60,1,16600.0,0.127,In-house call center,2108.0,350.0
+TH0018,E,30,0,658200.0,0.1293,Legal action (law firm),195742.0,21164.0
+TH0019,C,60,1,191600.0,0.103,In-house call center,19735.0,350.0
+TH0020,B,90,1,176600.0,0.1659,Legal action (law firm),67385.0,11532.0
+TH0021,C,180,0,891100.0,0.0249,External collection agency,37720.0,500.0
+TH0022,B,60,1,118300.0,0.1219,In-house call center,14421.0,350.0
+TH0023,A,60,1,128200.0,0.1072,In-house call center,13743.0,350.0
+TH0024,G,30,0,492300.0,0.1154,Legal action (law firm),130666.0,17846.0
+TH0025,D,120,1,365200.0,0.0774,External collection agency,48053.0,500.0
+TH0026,E,30,1,338800.0,0.1321,Legal action (law firm),102938.0,14776.0
+TH0027,E,90,1,386900.0,0.0787,Field collector visit,42629.0,1800.0
+TH0028,E,90,1,310000.0,0.0979,Field collector visit,42489.0,1800.0
+TH0029,A,30,0,83400.0,0.0423,In-house call center,1411.0,350.0
+TH0030,C,120,1,272000.0,0.0957,In-house call center,26030.0,350.0

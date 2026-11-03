@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Debt Collection Optimizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highs@1.15.3/build/highs.js"></script>
+<style>
+:root {
+  --bg: #f6f5f1; --panel: #ffffff; --ink: #1d2327; --muted: #5f6b73; --line: #e2e0d8;
+  --accent: #2a6f97; --accent-ink: #ffffff; --warn: #b5541c; --ok: #2f7d4f; --bad: #b03030;
+  --s0: #a9a9a9; --s1: #8cc0de; --s2: #2a6f97; --s3: #e8a964; --s4: #c46a24; --s5: #6e2a0e;
+  --track: #ecebe5;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15181b; --panel: #1e2226; --ink: #e8e6e1; --muted: #9aa5ad; --line: #30363c;
+    --accent: #6fb3d9; --accent-ink: #0f1a22; --warn: #e39a5f; --ok: #6cc28f; --bad: #e07a7a;
+    --s0: #6c7378; --s1: #7fb6d6; --s2: #4a93c0; --s3: #e8a964; --s4: #d17d3a; --s5: #a5502b;
+    --track: #2a2f34;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15181b; --panel: #1e2226; --ink: #e8e6e1; --muted: #9aa5ad; --line: #30363c;
+  --accent: #6fb3d9; --accent-ink: #0f1a22; --warn: #e39a5f; --ok: #6cc28f; --bad: #e07a7a;
+  --s0: #6c7378; --s1: #7fb6d6; --s2: #4a93c0; --s3: #e8a964; --s4: #d17d3a; --s5: #a5502b;
+  --track: #2a2f34;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.5 "IBM Plex Sans", "IBM Plex Sans Thai", system-ui, sans-serif; }
+.th { font-family: "IBM Plex Sans Thai", sans-serif; color: var(--muted); font-size: 12px; }
+.mono, td.num, .kpi b { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+header { padding: 22px 24px 14px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; }
+header h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+header p { margin: 2px 0 0; color: var(--muted); }
+.facts { display: flex; gap: 20px; flex-wrap: wrap; color: var(--muted); font-size: 12px; }
+.facts b { display: block; color: var(--ink); font-size: 15px; font-family: "IBM Plex Mono", monospace; font-weight: 500; }
+main { display: grid; grid-template-columns: 360px 1fr; gap: 18px; padding: 18px 24px 40px; align-items: start; }
+main > * { min-width: 0; }
+@media (max-width: 980px) { main { grid-template-columns: minmax(0, 1fr); padding: 16px; } header { padding: 18px 16px 12px; } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.card + .card { margin-top: 14px; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+h3 { font-size: 14px; margin: 0 0 8px; font-weight: 600; }
+aside { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; }
+@media (max-width: 980px) { aside { position: static; max-height: none; } }
+.field { display: grid; grid-template-columns: 1fr 110px; gap: 4px 10px; align-items: center; margin: 7px 0; }
+.field label { font-size: 13px; }
+.field small { grid-column: 1 / -1; color: var(--muted); font-size: 11.5px; margin-top: -3px; }
+input[type=number], select { width: 100%; padding: 5px 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); font: inherit; font-size: 13px; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+button { font: inherit; font-size: 13px; padding: 7px 12px; border-radius: 7px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button:disabled { opacity: 0.55; cursor: progress; }
+.presets button { font-size: 12px; padding: 4px 9px; }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-size: 12px; }
+td.num, th.num { text-align: right; }
+.scroll { overflow-x: auto; }
+.strat { padding: 9px 0; border-bottom: 1px solid var(--line); }
+.strat:last-child { border-bottom: 0; }
+.strat-head label { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+.strat-head .th { display: block; margin-left: 22px; }
+.strat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 6px 0 4px 22px; }
+.strat-grid label { font-size: 11px; color: var(--muted); }
+.strat-grid input { padding: 3px 6px; }
+.strat-pri { display: grid; grid-template-columns: auto 1fr 38px; gap: 8px; align-items: center; margin-left: 22px; font-size: 11.5px; color: var(--muted); }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.kpi span { color: var(--muted); font-size: 12px; }
+.kpi b { display: block; font-size: 20px; font-weight: 500; margin-top: 2px; }
+.kpi em { font-style: normal; font-size: 11.5px; color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 1250px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.grid2 .card + .card { margin-top: 0; }
+.util { margin: 8px 0; }
+.util .row { display: flex; justify-content: space-between; font-size: 12.5px; }
+.bar { height: 8px; background: var(--track); border-radius: 4px; overflow: hidden; margin-top: 3px; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.bar i.full { background: var(--warn); }
+.chip { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11.5px; color: #fff; }
+.status { font-size: 12.5px; color: var(--muted); min-height: 20px; margin-top: 8px; }
+.ok { color: var(--ok); } .bad { color: var(--bad); }
+.progress { height: 3px; background: var(--track); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+.progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .1s; }
+.chart-box { position: relative; height: 260px; }
+.note { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; margin: 4px 0 10px; }
+.mixbar { display: flex; height: 22px; border-radius: 5px; overflow: hidden; margin: 6px 0 2px; }
+.mixbar div { height: 100%; }
+.mixrow { display: grid; grid-template-columns: 120px 1fr 44px; gap: 10px; align-items: center; font-size: 12.5px; }
+.theme-toggle { font-size: 12px; padding: 4px 9px; }
+.empty { color: var(--muted); padding: 30px 0; text-align: center; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Debt Collection Strategy Optimizer</h1>
+    <p>CPE 613 term project — assign one collection strategy per delinquent account to maximise expected net recovery (THB). <span class="th">ระบบจัดสรรกลยุทธ์การติดตามหนี้</span></p>
+  </div>
+  <div class="facts" id="facts"></div>
+</header>
+
+<main>
+<aside>
+  <div class="card">
+    <h2>Portfolio &amp; constraints</h2>
+    <div class="field"><label for="n">Accounts N</label><input type="number" id="n" min="5" max="300" step="1"><small>First N accounts of the 300-account LendingClub pool (N = 30 is the report instance).</small></div>
+    <div class="field"><label for="fx">FX rate (THB / USD)</label><input type="number" id="fx" step="0.1"></div>
+    <div class="field"><label for="budget">Budget B<sub>max</sub> (฿)</label><input type="number" id="budget" step="5000"></div>
+    <div class="field"><label for="call_hours">Call-center hours H</label><input type="number" id="call_hours" step="0.75"></div>
+    <div class="field"><label for="field_slots">Field visits V</label><input type="number" id="field_slots" step="1"></div>
+    <div class="field"><label for="hard_cap">Hard-collection cap M</label><input type="number" id="hard_cap" step="1"><small>Max accounts sent to agency + legal (customer-conduct policy).</small></div>
+    <div class="field"><label for="legal_retainer">Law-firm retainer F (฿)</label><input type="number" id="legal_retainer" step="5000"></div>
+    <div class="field"><label for="legal_min_cases">Min legal cases L</label><input type="number" id="legal_min_cases" step="1"></div>
+    <div class="field"><label for="legal_min_balance">Legal min balance (฿)</label><input type="number" id="legal_min_balance" step="10000"></div>
+    <div class="field"><label for="must_act_dpd">Must-act DPD ≥</label><input type="number" id="must_act_dpd" step="30"><small>These accounts cannot receive “No action”.</small></div>
+    <div class="field"><label for="account_priority">Account priority w<sub>i</sub></label>
+      <select id="account_priority"><option value="none">Equal</option><option value="balance">Larger balance first</option><option value="dpd">Older delinquency first</option><option value="grade">Riskier grade first</option></select></div>
+  </div>
+
+  <div class="card">
+    <h2>Strategies &amp; priority π<sub>k</sub></h2>
+    <div class="presets btns" style="margin:0 0 8px">
+      <button data-preset="default">Neutral</button>
+      <button data-preset="friendly">Customer-friendly</button>
+      <button data-preset="aggressive">Aggressive recovery</button>
+    </div>
+    <div id="strat-table"></div>
+    <p class="note">Lift multiplies the model’s base recovery rate ρ<sub>i</sub>. Priority π<sub>k</sub> &gt; 1 favours a strategy in the objective; reported THB figures always use the true values.</p>
+  </div>
+
+  <div class="card">
+    <div class="btns" style="margin-top:0">
+      <button class="primary" id="run">Run optimization</button>
+      <button id="pareto">Pareto front</button>
+      <button id="reset">Reset</button>
+      <button class="theme-toggle" id="theme">Theme</button>
+    </div>
+    <div class="progress"><i id="prog"></i></div>
+    <div class="status" id="status">Loading exact solver…</div>
+  </div>
+</aside>
+
+<section>
+  <div class="kpis" id="kpis"></div>
+
+  <div class="card" style="margin-top:14px">
+    <h2>Method comparison</h2>
+    <div class="scroll"><table id="cmp"><tr><td class="empty">Press <b>Run optimization</b>.</td></tr></table></div>
+    <p class="note" id="cmp-note"></p>
+  </div>
+
+  <div class="grid2" style="margin-top:14px">
+    <div class="card">
+      <h2>Strategy mix (best solution)</h2>
+      <div id="mix"><div class="empty">No solution yet</div></div>
+    </div>
+    <div class="card">
+      <h2>Resource use &amp; shadow prices</h2>
+      <div id="util"><div class="empty">No solution yet</div></div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:14px">
+    <div class="card">
+      <h2>Meta-heuristic convergence</h2>
+      <div class="chart-box"><canvas id="conv"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Pareto front: gross recovery vs cost</h2>
+      <div class="chart-box"><canvas id="par"></canvas></div>
+      <p class="note">ε-constraint: max f<sub>1</sub> (gross recovery) subject to f<sub>2</sub> (cost) ≤ ε, all other constraints kept.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h2>Account assignment</h2>
+    <div class="scroll"><table id="assign"><tr><td class="empty">No solution yet</td></tr></table></div>
+  </div>
+</section>
+</main>
+
+<script id="payload" type="application/json">/*__DATA__*/null</script>
+<script>
+const DATA = JSON.parse(document.getElementById("payload").textContent);
+const BASE_FX = DATA.model.fx_thb_per_usd;
+const TH_NAMES = ["ไม่ดำเนินการ", "SMS / LINE", "คอลเซ็นเตอร์", "ลงพื้นที่", "บริษัทติดตามหนี้", "ดำเนินคดี"];
+const K = 6, NONE = 0, SMS = 1, CALL = 2, FIELD = 3, AGENCY = 4, LEGAL = 5;
+const PRESETS = {
+  default: [1, 1, 1, 1, 1, 1],
+  friendly: [1, 1.3, 1.2, 1.0, 0.8, 0.7],
+  aggressive: [0.8, 0.9, 1.0, 1.1, 1.2, 1.3],
+};
+const fmtB = new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB", maximumFractionDigits: 0 });
+const fmtN = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+const thb = v => fmtB.format(Math.round(v));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const sColor = k => css(`--s${k}`);
+const $ = id => document.getElementById(id);
+
+let state, strategies, highs = null, charts = {}, last = null, lastPareto = null;
+
+// ------------------------------------------------------------- UI state
+function resetState() {
+  state = { n: 30, fx: BASE_FX, ...structuredClone(DATA.cfg) };
+  strategies = structuredClone(DATA.strategies).map((s, k) => ({ ...s, enabled: true, priority: DATA.cfg.strategy_priority[k] }));
+  renderInputs();
+}
+const NUM_FIELDS = ["n", "fx", "budget", "call_hours", "field_slots", "hard_cap", "legal_retainer", "legal_min_cases", "legal_min_balance", "must_act_dpd"];
+function renderInputs() {
+  NUM_FIELDS.forEach(f => $(f).value = state[f]);
+  $("account_priority").value = state.account_priority;
+  $("strat-table").innerHTML = strategies.map((s, k) => `<div class="strat">
+      <div class="strat-head"><label><input type="checkbox" data-k="${k}" data-f="enabled" ${s.enabled ? "checked" : ""}>
+        <span class="dot" style="background:${sColor(k)}"></span>${s.name}</label>
+        <span class="th">${TH_NAMES[k]}${s.cost_pct ? ` · +${s.cost_pct * 100}% of balance` : ""}${s.hours ? ` · ${s.hours} h/account` : ""}</span></div>
+      <div class="strat-grid">
+        <label>Lift<input type="number" step="0.05" data-k="${k}" data-f="lift" value="${s.lift}"></label>
+        <label>Cost ฿<input type="number" step="25" data-k="${k}" data-f="cost" value="${s.cost}"></label>
+        <label>Comm.<input type="number" step="0.05" data-k="${k}" data-f="commission" value="${s.commission}"></label>
+      </div>
+      <div class="strat-pri"><span>Priority π</span><input type="range" min="0.5" max="1.5" step="0.05" data-k="${k}" data-f="priority" value="${s.priority}"><span class="mono" id="pv${k}">${s.priority.toFixed(2)}</span></div>
+    </div>`).join("");
+}
+document.addEventListener("input", e => {
+  const el = e.target;
+  if (NUM_FIELDS.includes(el.id)) state[el.id] = +el.value;
+  else if (el.id === "account_priority") state.account_priority = el.value;
+  else if (el.dataset.k !== undefined) {
+    const s = strategies[+el.dataset.k], f = el.dataset.f;
+    s[f] = f === "enabled" ? el.checked : +el.value;
+    if (f === "priority") $("pv" + el.dataset.k).textContent = s.priority.toFixed(2);
+  }
+  renderFacts();
+});
+document.querySelectorAll("[data-preset]").forEach(b => b.onclick = () => {
+  PRESETS[b.dataset.preset].forEach((p, k) => strategies[k].priority = p);
+  renderInputs();
+});
+
+// ------------------------------------------------------------- model (mirrors src/optimizer.py)
+function accountWeights(acc, mode) {
+  if (mode === "balance") {
+    const b = acc.map(a => a.balance), lo = Math.min(...b), hi = Math.max(...b);
+    return b.map(v => 1 + 0.5 * (v - lo) / (hi - lo + 1e-9));
+  }
+  if (mode === "dpd") return acc.map(a => 1 + 0.5 * (a.dpd - 30) / 150);
+  if (mode === "grade") return acc.map(a => 1 + 0.5 * "ABCDEFG".indexOf(a.grade) / 6);
+  return acc.map(() => 1);
+}
+function buildInstance() {
+  const cfg = { ...state };
+  const acc = DATA.accounts.slice(0, Math.max(5, Math.min(300, cfg.n)))
+    .map(a => ({ ...a, balance: Math.round(a.balance_thb * cfg.fx / BASE_FX / 100) * 100 }));
+  const w = accountWeights(acc, cfg.account_priority);
+  const R = [], C = [], V = [], W = [], allowed = [];
+  acc.forEach((a, i) => {
+    R.push([]); C.push([]); V.push([]); W.push([]); allowed.push([]);
+    strategies.forEach((s, k) => {
+      let r = a.rho * s.lift;
+      if (!a.reachable && (k === SMS || k === CALL)) r *= cfg.unreachable_factor;
+      r = Math.min(r, cfg.rate_cap);
+      const rec = a.balance * r, cost = s.cost + s.cost_pct * a.balance;
+      R[i].push(rec); C[i].push(cost);
+      V[i].push(rec * (1 - s.commission) - cost);
+      W[i].push(w[i] * s.priority * rec * (1 - s.commission) - cost);
+      let ok = s.enabled;
+      if (k === LEGAL && a.balance < cfg.legal_min_balance) ok = false;
+      if (k === NONE && a.dpd >= cfg.must_act_dpd) ok = false;
+      allowed[i].push(ok);
+    });
+    if (!allowed[i].some(Boolean)) allowed[i][SMS] = true; // keep every account assignable
+  });
+  return { cfg, acc, R, C, V, W, allowed, n: acc.length, hours: strategies.map(s => s.hours), phi: strategies.map(s => s.commission) };
+}
+function evaluate(I, a, usePriority = true) {
+  let obj = 0, net = 0, gross = 0, cost = 0, hours = 0, field = 0, hard = 0, legal = 0;
+  const mix = Array(K).fill(0);
+  for (let i = 0; i < I.n; i++) {
+    const k = a[i];
+    obj += usePriority ? I.W[i][k] : I.V[i][k]; net += I.V[i][k];
+    gross += I.R[i][k]; cost += I.C[i][k]; hours += I.hours[k]; mix[k]++;
+    if (k === FIELD) field++; if (k === AGENCY || k === LEGAL) hard++; if (k === LEGAL) legal++;
+  }
+  const y = legal > 0 ? 1 : 0, F = y * I.cfg.legal_retainer;
+  return { objective: obj - F, net: net - F, gross, cost: cost + F, hours, field, hard, legal, y, mix };
+}
+function violation(I, a) {
+  const e = evaluate(I, a), c = I.cfg;
+  let v = Math.max(0, e.cost - c.budget) / 1000;
+  v += Math.max(0, e.hours - c.call_hours) * 10;
+  v += Math.max(0, e.field - c.field_slots) * 10;
+  v += Math.max(0, e.hard - c.hard_cap) * 10;
+  if (e.y && e.legal < c.legal_min_cases) v += (c.legal_min_cases - e.legal) * 10;
+  for (let i = 0; i < I.n; i++) if (!I.allowed[i][a[i]]) v += 100;
+  return v;
+}
+const penalised = (I, a) => evaluate(I, a).objective - 100000 * violation(I, a);
+const allowedList = (I, i) => I.allowed[i].map((ok, k) => ok ? k : -1).filter(k => k >= 0);
+
+// ------------------------------------------------------------- exact MILP via HiGHS (CPLEX LP format)
+function lpModel(I, { relax = false, objective = "W", budget = I.cfg.budget } = {}) {
+  const c = I.cfg, vars = [], term = (v, x) => `${v < 0 ? "-" : "+"} ${Math.abs(v).toFixed(4)} ${x}`;
+  const obj = [], rows = [];
+  for (let i = 0; i < I.n; i++) for (let k = 0; k < K; k++) if (I.allowed[i][k]) {
+    vars.push(`x${i}_${k}`);
+    obj.push(term(I[objective][i][k], `x${i}_${k}`));
+  }
+  if (objective === "W") obj.push(term(-c.legal_retainer, "y"));
+  const has = (i, k) => I.allowed[i][k];
+  for (let i = 0; i < I.n; i++) rows.push(` assign_${i}: ` + allowedList(I, i).map(k => `+ 1 x${i}_${k}`).join(" ") + " = 1");
+  const sum = (pred, coef) => { const t = []; for (let i = 0; i < I.n; i++) for (let k = 0; k < K; k++) if (has(i, k) && pred(k)) { const v = coef(i, k); if (v) t.push(term(v, `x${i}_${k}`)); } return t; };
+  const budgetTerms = sum(() => true, (i, k) => I.C[i][k]); budgetTerms.push(term(c.legal_retainer, "y"));
+  rows.push(` budget: ${budgetTerms.join("\n ")} <= ${budget}`);
+  const callT = sum(k => k === CALL, (i, k) => I.hours[k]);
+  if (callT.length) rows.push(` call_hours: ${callT.join("\n ")} <= ${c.call_hours}`);
+  const fieldT = sum(k => k === FIELD, () => 1);
+  if (fieldT.length) rows.push(` field_slots: ${fieldT.join("\n ")} <= ${c.field_slots}`);
+  const hardT = sum(k => k === AGENCY || k === LEGAL, () => 1);
+  if (hardT.length) rows.push(` hard_cap: ${hardT.join("\n ")} <= ${c.hard_cap}`);
+  const legalT = [];
+  for (let i = 0; i < I.n; i++) if (has(i, LEGAL)) { rows.push(` link_${i}: + 1 x${i}_${LEGAL} - 1 y <= 0`); legalT.push(`- 1 x${i}_${LEGAL}`); }
+  rows.push(` legal_min: + ${c.legal_min_cases} y ${legalT.join(" ")} <= 0`);
+  const bounds = vars.concat("y").map(v => ` 0 <= ${v} <= 1`);
+  return `Maximize\n obj: ${obj.join("\n ")}\nSubject To\n${rows.join("\n")}\nBounds\n${bounds.join("\n")}\n` +
+    (relax ? "" : `General\n ${vars.concat("y").join(" ")}\n`) + "End\n";
+}
+function solveExact(I, opts = {}) {
+  const t = performance.now();
+  const r = highs.solve(lpModel(I, opts), { time_limit: 30 });
+  const ms = performance.now() - t;
+  if (!/Optimal|Time limit/i.test(r.Status)) throw new Error("HiGHS status: " + r.Status);
+  const a = Array(I.n).fill(SMS);
+  for (const [name, col] of Object.entries(r.Columns)) {
+    const m = /^x(\d+)_(\d)$/.exec(name);
+    if (m && col.Primal > 0.5) a[+m[1]] = +m[2];
+  }
+  return { method: "Exact MILP (HiGHS)", a, ms, status: r.Status };
+}
+function shadowPrices(I) {
+  const r = highs.solve(lpModel(I, { relax: true }));
+  const out = {};
+  (r.Rows || []).forEach(row => { if (["budget", "call_hours", "field_slots", "hard_cap"].includes(row.Name)) out[row.Name] = Math.abs(row.Dual); });
+  return { bound: r.ObjectiveValue, duals: out };
+}
+
+// ------------------------------------------------------------- greedy / GA / SA
+function greedy(I) {
+  const t = performance.now();
+  const a = I.allowed.map((row, i) => allowedList(I, i).reduce((b, k) => I.C[i][k] < I.C[i][b] ? k : b, allowedList(I, i)[0]));
+  for (;;) {
+    let best = null;
+    const hasLegal = a.includes(LEGAL);
+    for (let i = 0; i < I.n; i++) for (const k of allowedList(I, i)) {
+      if (k === a[i]) continue;
+      const dv = I.W[i][k] - I.W[i][a[i]];
+      if (dv <= 0 || (k === LEGAL && !hasLegal)) continue;
+      const old = a[i]; a[i] = k;
+      const feas = violation(I, a) === 0; a[i] = old;
+      if (!feas) continue;
+      const ratio = dv / Math.max(I.C[i][k] - I.C[i][a[i]], 1);
+      if (!best || ratio > best[0]) best = [ratio, i, k];
+    }
+    if (!best) break;
+    a[best[1]] = best[2];
+  }
+  return { method: "Greedy (value / cost)", a, ms: performance.now() - t };
+}
+function rng(seed) { let s = seed >>> 0 || 1; return () => ((s = Math.imul(s ^ (s >>> 15), 1 | s) + 0x6d2b79f5 | 0, ((s ^ (s >>> 7)) >>> 0) / 4294967296)); }
+const pick = (r, arr) => arr[Math.floor(r() * arr.length)];
+const tick = () => new Promise(res => setTimeout(res));
+async function ga(I, seed = 1, pop = 120, gens = 400) {
+  const r = rng(seed), t = performance.now(), pm = 1.5 / I.n;
+  let P = Array.from({ length: pop }, () => I.allowed.map((_, i) => pick(r, allowedList(I, i))));
+  P[0] = I.allowed.map(row => row[SMS] ? SMS : CALL);
+  let fit = P.map(a => penalised(I, a));
+  const hist = [];
+  const tour = () => { let b = Math.floor(r() * pop); for (let j = 0; j < 2; j++) { const c = Math.floor(r() * pop); if (fit[c] > fit[b]) b = c; } return P[b]; };
+  for (let g = 0; g < gens; g++) {
+    const order = fit.map((f, i) => i).sort((x, y) => fit[y] - fit[x]);
+    const next = [P[order[0]].slice(), P[order[1]].slice()];
+    while (next.length < pop) {
+      const p1 = tour(), p2 = tour();
+      const child = r() < 0.9 ? p1.map((v, i) => r() < 0.5 ? v : p2[i]) : p1.slice();
+      for (let i = 0; i < I.n; i++) if (r() < pm) child[i] = pick(r, allowedList(I, i));
+      next.push(child);
+    }
+    P = next; fit = P.map(a => penalised(I, a));
+    hist.push(Math.max(...fit));
+    if (g % 25 === 0) { setProgress(g / gens * 0.5 + 0.1); await tick(); }
+  }
+  const bi = fit.indexOf(Math.max(...fit));
+  return { method: "Genetic Algorithm", a: P[bi], ms: performance.now() - t, hist };
+}
+async function sa(I, seed = 1, iters = 60000, T0 = 1e6, alpha = 0.99975) {
+  const r = rng(seed), t = performance.now();
+  let a = I.allowed.map(row => row[SMS] ? SMS : CALL), fa = penalised(I, a), best = a.slice(), fb = fa, T = T0;
+  const hist = [];
+  for (let it = 0; it < iters; it++) {
+    const b = a.slice(), i = Math.floor(r() * I.n);
+    b[i] = pick(r, allowedList(I, i));
+    if (r() < 0.3) { const j = Math.floor(r() * I.n); if (I.allowed[i][a[j]] && I.allowed[j][a[i]]) { b[i] = a[j]; b[j] = a[i]; } }
+    const f = penalised(I, b);
+    if (f >= fa || r() < Math.exp((f - fa) / T)) { a = b; fa = f; if (fa > fb) { best = a.slice(); fb = fa; } }
+    T *= alpha;
+    if (it % 150 === 0) hist.push(fb);
+    if (it % 4000 === 0) { setProgress(0.6 + it / iters * 0.35); await tick(); }
+  }
+  return { method: "Simulated Annealing", a: best, ms: performance.now() - t, hist };
+}
+
+// ------------------------------------------------------------- rendering
+function setProgress(p) { $("prog").style.width = (p * 100).toFixed(0) + "%"; }
+function setStatus(html) { $("status").innerHTML = html; }
+function renderFacts() {
+  const acc = DATA.accounts.slice(0, state.n);
+  const bal = acc.reduce((s, a) => s + a.balance_thb * state.fx / BASE_FX, 0);
+  const rho = acc.reduce((s, a) => s + a.rho, 0) / acc.length;
+  const I = buildInstance();
+  const size = I.allowed.reduce((t, row) => t + Math.log10(row.filter(Boolean).length), 0);
+  $("facts").innerHTML = `
+    <div>Accounts<b>${acc.length}</b></div>
+    <div>Outstanding<b>${thb(bal)}</b></div>
+    <div>Mean ρ<sub>i</sub><b>${(rho * 100).toFixed(1)}%</b></div>
+    <div>Search space Π|K<sub>i</sub>|<b>≈ 10^${size.toFixed(1)}</b></div>
+    <div>Model AUC<b>${DATA.model.classifier_auc}</b></div>`;
+}
+function renderKPIs(I, e) {
+  const bal = I.acc.reduce((s, a) => s + a.balance, 0);
+  $("kpis").innerHTML = [
+    ["Expected net recovery", thb(e.net), "after cost &amp; commission"],
+    ["Expected gross recovery", thb(e.gross), `${(e.gross / bal * 100).toFixed(1)}% of outstanding`],
+    ["Collection cost", thb(e.cost), `budget ${thb(I.cfg.budget)}`],
+    ["Return on cost", (e.net / Math.max(e.cost, 1)).toFixed(1) + "×", "net ฿ per ฿ spent"],
+  ].map(([l, v, s]) => `<div class="kpi"><span>${l}</span><b>${v}</b><em>${s}</em></div>`).join("");
+}
+function renderCompare(I, results, exactObj) {
+  $("cmp").innerHTML = `<tr><th>Method</th><th class="num">Objective (with π, w)</th><th class="num">Net recovery</th><th class="num">Cost</th><th class="num">Gap to exact</th><th class="num">Time</th><th>Feasible</th></tr>` +
+    results.map(r => {
+      const e = evaluate(I, r.a), feas = violation(I, r.a) === 0;
+      const gap = exactObj ? (1 - e.objective / exactObj) * 100 : null;
+      return `<tr><td>${r.method}</td><td class="num">${thb(e.objective)}</td><td class="num">${thb(e.net)}</td><td class="num">${thb(e.cost)}</td>
+        <td class="num">${gap === null ? "—" : gap.toFixed(2) + "%"}</td><td class="num">${r.ms < 1000 ? r.ms.toFixed(0) + " ms" : (r.ms / 1000).toFixed(2) + " s"}</td>
+        <td class="${feas ? "ok" : "bad"}">${feas ? "yes" : "no"}</td></tr>`;
+    }).join("");
+}
+function renderMix(e, n) {
+  $("mix").innerHTML = `<div class="mixbar">${e.mix.map((c, k) => c ? `<div title="${strategies[k].name}: ${c}" style="width:${c / n * 100}%;background:${sColor(k)}"></div>` : "").join("")}</div>` +
+    e.mix.map((c, k) => `<div class="mixrow"><span><span class="dot" style="background:${sColor(k)}"></span>${strategies[k].key}</span>
+      <div class="bar"><i style="width:${c / n * 100}%;background:${sColor(k)}"></i></div><span class="mono" style="text-align:right">${c}</span></div>`).join("") +
+    `<p class="note">Law firm engaged (y): <b>${e.y ? "yes" : "no"}</b> · legal cases ${e.legal}</p>`;
+}
+function renderUtil(I, e, sp) {
+  const c = I.cfg, rows = [
+    ["Budget", e.cost, c.budget, thb, "budget", "per ฿1"],
+    ["Call-center hours", e.hours, c.call_hours, v => v.toFixed(2) + " h", "call_hours", "per hour"],
+    ["Field visits", e.field, c.field_slots, v => v, "field_slots", "per visit"],
+    ["Hard-collection cap", e.hard, c.hard_cap, v => v, "hard_cap", "per account"],
+  ];
+  $("util").innerHTML = rows.map(([l, u, cap, f, key, unit]) => {
+    const p = Math.min(100, u / Math.max(cap, 1e-9) * 100), d = sp?.duals?.[key];
+    return `<div class="util"><div class="row"><span>${l}</span><span class="mono">${f(u)} / ${f(cap)}</span></div>
+      <div class="bar"><i class="${p > 99.5 ? "full" : ""}" style="width:${p}%"></i></div>
+      <div class="row note"><span>shadow price (LP)</span><span class="mono">${d === undefined ? "—" : (key === "budget" ? d.toFixed(3) : thb(d)) + " " + unit}</span></div></div>`;
+  }).join("") + (sp ? `<p class="note">LP-relaxation bound ${thb(sp.bound)}. A resource is worth buying when its shadow price exceeds the price of one more unit (midterm Problem 2 logic).</p>` : "");
+}
+function renderAssign(I, a) {
+  const rows = I.acc.map((acc, i) => ({ acc, k: a[i], rec: I.R[i][a[i]], cost: I.C[i][a[i]], net: I.V[i][a[i]] }));
+  $("assign").innerHTML = `<tr><th>Account</th><th>Grade</th><th class="num">DPD</th><th>Phone</th><th class="num">Balance</th><th class="num">ρ<sub>i</sub></th><th>Strategy</th><th class="num">E[recovery]</th><th class="num">Cost</th><th class="num">Net</th></tr>` +
+    rows.map(r => `<tr><td class="mono">${r.acc.account_id}</td><td>${r.acc.sub_grade}</td><td class="num">${r.acc.dpd}</td><td>${r.acc.reachable ? "reachable" : "<span class='bad'>no</span>"}</td>
+      <td class="num">${thb(r.acc.balance)}</td><td class="num">${(r.acc.rho * 100).toFixed(1)}%</td>
+      <td><span class="chip" style="background:${sColor(r.k)}">${strategies[r.k].key}</span></td>
+      <td class="num">${thb(r.rec)}</td><td class="num">${thb(r.cost)}</td><td class="num">${thb(r.net)}</td></tr>`).join("");
+}
+function chartDefaults() {
+  Chart.defaults.color = css("--muted");
+  Chart.defaults.borderColor = css("--line");
+  Chart.defaults.font.family = "IBM Plex Sans, system-ui, sans-serif";
+}
+function renderConv(gaR, saR, exactObj) {
+  chartDefaults();
+  const pts = (h) => h.map((v, i) => ({ x: i / (h.length - 1) * 100, y: v }));
+  charts.conv?.destroy();
+  const ds = [
+    { label: "GA best", data: pts(gaR.hist), borderColor: sColor(2), pointRadius: 0, borderWidth: 2 },
+    { label: "SA best", data: pts(saR.hist), borderColor: sColor(4), pointRadius: 0, borderWidth: 2 },
+  ];
+  if (exactObj) ds.push({ label: "Exact optimum", data: [{ x: 0, y: exactObj }, { x: 100, y: exactObj }], borderColor: css("--ink"), borderDash: [4, 4], pointRadius: 0, borderWidth: 1 });
+  const ys = ds.flatMap(d => d.data.map(p => p.y)), top = Math.max(...ys);
+  charts.conv = new Chart($("conv"), { type: "line", data: { datasets: ds }, options: {
+    maintainAspectRatio: false, animation: false, parsing: false,
+    scales: { x: { type: "linear", title: { display: true, text: "% of run" }, max: 100 },
+      y: { min: Math.max(Math.min(...ys), top * 0.8), ticks: { callback: v => "฿" + fmtN.format(v / 1000) + "k" } } },
+    plugins: { legend: { labels: { boxWidth: 12 } }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${thb(c.parsed.y)}` } } } } });
+}
+function renderPareto(pts, current) {
+  chartDefaults();
+  charts.par?.destroy();
+  charts.par = new Chart($("par"), { type: "line", data: { datasets: [
+    { label: "Pareto front (gross)", data: pts.map(p => ({ x: p.cost, y: p.gross })), borderColor: sColor(2), backgroundColor: sColor(2), stepped: false, pointRadius: 3 },
+    { label: "Net at that point", data: pts.map(p => ({ x: p.cost, y: p.net })), borderColor: sColor(4), backgroundColor: sColor(4), borderDash: [5, 3], pointRadius: 2 },
+    ...(current ? [{ label: "Current solution", data: [{ x: current.cost, y: current.gross }], type: "scatter", backgroundColor: css("--ink"), pointRadius: 6, pointStyle: "rectRot" }] : []),
+  ] }, options: { maintainAspectRatio: false, animation: false, parsing: false,
+    scales: { x: { type: "linear", title: { display: true, text: "f₂ cost (฿)" }, ticks: { callback: v => fmtN.format(v / 1000) + "k" } },
+      y: { title: { display: true, text: "฿" }, ticks: { callback: v => fmtN.format(v / 1000) + "k" } } },
+    plugins: { legend: { labels: { boxWidth: 12 } }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${thb(c.parsed.y)} @ cost ${thb(c.parsed.x)}` } } } } });
+}
+
+// ------------------------------------------------------------- actions
+async function run() {
+  $("run").disabled = $("pareto").disabled = true;
+  try {
+    const I = buildInstance(), results = [];
+    setProgress(0.02); setStatus("Solving exact MILP…"); await tick();
+    let exact = null, sp = null;
+    if (highs) { exact = solveExact(I); results.push(exact); sp = shadowPrices(I); }
+    setProgress(0.08); setStatus("Greedy heuristic…"); await tick();
+    results.push(greedy(I));
+    setStatus("Genetic algorithm…");
+    const g = await ga(I); results.push(g);
+    setStatus("Simulated annealing…");
+    const s = await sa(I); results.push(s);
+    const exactObj = exact ? evaluate(I, exact.a).objective : null;
+    const feasible = results.filter(r => violation(I, r.a) === 0);
+    const best = feasible.reduce((b, r) => evaluate(I, r.a).objective > evaluate(I, b.a).objective ? r : b, feasible[0] || results[0]);
+    const e = evaluate(I, best.a);
+    renderKPIs(I, e); renderCompare(I, results, exactObj); renderMix(e, I.n); renderUtil(I, e, sp);
+    renderAssign(I, best.a); renderConv(g, s, exactObj);
+    $("cmp-note").innerHTML = `Best feasible: <b>${best.method}</b>. Objective includes priority weights π<sub>k</sub>, w<sub>i</sub>; “Net recovery” is the unweighted THB value.` +
+      (exact ? ` HiGHS status: ${exact.status}.` : " Exact solver unavailable (offline?) — heuristics only.");
+    last = { I, e, g, s, exactObj, a: best.a };
+    document.body.dataset.exact = exactObj ?? "";
+    setProgress(1); setStatus(`<span class="ok">Done.</span> ${I.n} accounts · search space ≈ 10^${I.allowed.reduce((t, r) => t + Math.log10(r.filter(Boolean).length), 0).toFixed(1)}`);
+  } catch (err) {
+    console.error(err); setStatus(`<span class="bad">${err.message}</span>`);
+  } finally { $("run").disabled = $("pareto").disabled = false; }
+}
+async function pareto() {
+  if (!highs) { setStatus("<span class='bad'>Pareto front needs the exact solver.</span>"); return; }
+  $("run").disabled = $("pareto").disabled = true;
+  const saved = strategies.map(s => s.priority), savedAP = state.account_priority;
+  try {
+    strategies.forEach(s => s.priority = 1); state.account_priority = "none";
+    const I = buildInstance();
+    strategies.forEach((s, k) => s.priority = saved[k]); state.account_priority = savedAP;
+    const top = Math.max(I.cfg.budget * 2.5, 50000), pts = [];
+    for (let j = 0; j <= 20; j++) {
+      const eps = top * (0.03 + 0.97 * j / 20);
+      const r = highs.solve(lpModel(I, { objective: "R", budget: eps }), { time_limit: 10 });
+      if (!/Optimal|Time limit/i.test(r.Status)) continue;
+      const a = Array(I.n).fill(SMS);
+      for (const [nm, col] of Object.entries(r.Columns)) { const m = /^x(\d+)_(\d)$/.exec(nm); if (m && col.Primal > 0.5) a[+m[1]] = +m[2]; }
+      const e = evaluate(I, a, false); pts.push({ cost: e.cost, gross: e.gross, net: e.net });
+      setProgress(j / 20); setStatus(`Pareto point ${j + 1} / 21…`); await tick();
+    }
+    const uniq = pts.filter((p, i) => !pts.slice(0, i).some(q => Math.abs(q.cost - p.cost) < 1 && Math.abs(q.gross - p.gross) < 1)).sort((a, b) => a.cost - b.cost);
+    lastPareto = uniq; renderPareto(uniq, last?.e);
+    setStatus(`<span class="ok">Pareto front:</span> ${uniq.length} non-dominated points.`);
+  } catch (err) { console.error(err); setStatus(`<span class="bad">${err.message}</span>`); }
+  finally { strategies.forEach((s, k) => s.priority = saved[k]); state.account_priority = savedAP; $("run").disabled = $("pareto").disabled = false; }
+}
+$("run").onclick = run;
+$("pareto").onclick = pareto;
+$("reset").onclick = () => { resetState(); renderFacts(); };
+$("theme").onclick = () => {
+  const root = document.documentElement, dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+  renderInputs();
+  if (last) { renderMix(last.e, last.I.n); renderAssign(last.I, last.a); renderConv(last.g, last.s, last.exactObj); }
+  if (lastPareto) renderPareto(lastPareto, last?.e);
+};
+
+resetState(); renderFacts();
+(async () => {
+  try {
+    highs = await Module({ locateFile: f => "https://cdn.jsdelivr.net/npm/highs@1.15.3/build/" + f });
+    setStatus("Exact solver (HiGHS) ready. Press <b>Run optimization</b>.");
+  } catch (e) {
+    console.error(e); setStatus("<span class='bad'>Could not load HiGHS (offline?). GA, SA and Greedy still work.</span>");
+  }
+  if (location.hash === "#auto") { await run(); await pareto(); document.body.dataset.done = "1"; }
+})();
+</script>
+</body>
+</html>

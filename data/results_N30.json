@@ -1,0 +1,801 @@
+{
+  "cfg": {
+    "budget": 150000,
+    "call_hours": 12.0,
+    "field_slots": 5,
+    "hard_cap": 10,
+    "legal_retainer": 40000,
+    "legal_min_cases": 3,
+    "legal_min_balance": 100000,
+    "must_act_dpd": 90,
+    "unreachable_factor": 0.4,
+    "rate_cap": 0.9,
+    "strategy_priority": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "account_priority": "none"
+  },
+  "size": {
+    "per_account": [
+      6,
+      5,
+      5,
+      5,
+      5,
+      5,
+      5,
+      6,
+      5,
+      5,
+      6,
+      6,
+      5,
+      5,
+      6,
+      4,
+      5,
+      6,
+      6,
+      5,
+      5,
+      6,
+      6,
+      6,
+      5,
+      6,
+      5,
+      5,
+      5,
+      5
+    ],
+    "size": 5.53584375e+21,
+    "log10": 21.743183823596382,
+    "unrestricted": 2.2107391972073336e+23
+  },
+  "exact": {
+    "method": "MILP (HiGHS B&B)",
+    "time": 0.05072754100001475,
+    "status": "Optimization terminated successfully. (HiGHS Status 7: Optimal)",
+    "objective": 1099661.34325,
+    "net_recovery": 1099661.34325,
+    "gross_recovery": 1295662.0289999999,
+    "cost": 147575.0,
+    "commission": 48425.68575,
+    "call_hours": 10.5,
+    "field": 5,
+    "hard": 10,
+    "legal": 5,
+    "law_firm": 1,
+    "mix": {
+      "none": 0,
+      "sms": 1,
+      "call": 14,
+      "field": 5,
+      "agency": 5,
+      "legal": 5
+    },
+    "assign": [
+      2,
+      2,
+      2,
+      4,
+      2,
+      3,
+      2,
+      4,
+      5,
+      3,
+      2,
+      3,
+      4,
+      2,
+      2,
+      1,
+      2,
+      5,
+      2,
+      5,
+      4,
+      2,
+      2,
+      5,
+      4,
+      5,
+      3,
+      3,
+      2,
+      2
+    ]
+  },
+  "lp": {
+    "bound": 1115179.5819732882,
+    "shadow": {
+      "budget": 1.2770801348547711,
+      "call_hours": 0.0,
+      "field_slots": 7686.554470435675,
+      "hard_cap": 7113.448645746888
+    },
+    "fractional": 17
+  },
+  "bnb": {
+    "method": "Branch & Bound (custom)",
+    "time": 5.425595291999343,
+    "log": {
+      "nodes": 6267,
+      "pruned_bound": 3133,
+      "pruned_infeasible": 0,
+      "integer_leaves": 1,
+      "root_bound": 1115179.5819732882,
+      "incumbent_start": 927780.841,
+      "proved_optimal": true
+    },
+    "objective": 1099661.34325,
+    "net_recovery": 1099661.34325,
+    "gross_recovery": 1295662.0289999999,
+    "cost": 147575.0,
+    "commission": 48425.68575,
+    "call_hours": 10.5,
+    "field": 5,
+    "hard": 10,
+    "legal": 5,
+    "law_firm": 1,
+    "mix": {
+      "none": 0,
+      "sms": 1,
+      "call": 14,
+      "field": 5,
+      "agency": 5,
+      "legal": 5
+    },
+    "assign": [
+      2,
+      2,
+      2,
+      4,
+      2,
+      3,
+      2,
+      4,
+      5,
+      3,
+      2,
+      3,
+      4,
+      2,
+      2,
+      1,
+      2,
+      5,
+      2,
+      5,
+      4,
+      2,
+      2,
+      5,
+      4,
+      5,
+      3,
+      3,
+      2,
+      2
+    ]
+  },
+  "dp": {
+    "method": "DP (budget-only relaxation)",
+    "time": 0.002050208000582643,
+    "feasible_full": 0.0,
+    "objective": 1148052.2705,
+    "net_recovery": 1148052.2705,
+    "gross_recovery": 1420913.1380000003,
+    "cost": 149675.0,
+    "commission": 123185.8675,
+    "call_hours": 0.0,
+    "field": 5,
+    "hard": 24,
+    "legal": 5,
+    "law_firm": 1,
+    "mix": {
+      "none": 0,
+      "sms": 1,
+      "call": 0,
+      "field": 5,
+      "agency": 19,
+      "legal": 5
+    },
+    "assign": [
+      4,
+      4,
+      4,
+      4,
+      4,
+      3,
+      4,
+      4,
+      5,
+      3,
+      4,
+      3,
+      4,
+      4,
+      4,
+      1,
+      4,
+      5,
+      4,
+      5,
+      4,
+      4,
+      4,
+      5,
+      4,
+      5,
+      3,
+      3,
+      4,
+      4
+    ]
+  },
+  "greedy": {
+    "method": "Greedy (value/cost ratio)",
+    "time": 0.04647491700052342,
+    "objective": 927780.841,
+    "net_recovery": 927780.841,
+    "gross_recovery": 1121706.102,
+    "cost": 18925.0,
+    "commission": 175000.261,
+    "call_hours": 10.5,
+    "field": 5,
+    "hard": 10,
+    "legal": 0,
+    "law_firm": 0,
+    "mix": {
+      "none": 0,
+      "sms": 1,
+      "call": 14,
+      "field": 5,
+      "agency": 10,
+      "legal": 0
+    },
+    "assign": [
+      2,
+      2,
+      2,
+      3,
+      2,
+      4,
+      2,
+      3,
+      4,
+      4,
+      2,
+      4,
+      3,
+      2,
+      2,
+      1,
+      2,
+      3,
+      2,
+      4,
+      4,
+      2,
+      2,
+      4,
+      3,
+      4,
+      4,
+      4,
+      2,
+      2
+    ]
+  },
+  "marginal": {
+    "budget": {
+      "step": 1000,
+      "gain": 5304.315500000026
+    },
+    "call_hours": {
+      "step": 0.75,
+      "gain": 0.0
+    },
+    "field_slots": {
+      "step": 1,
+      "gain": 9282.617500000168
+    },
+    "hard_cap": {
+      "step": 1,
+      "gain": 7049.307500000112
+    }
+  },
+  "pareto": [
+    {
+      "eps": 10000.0,
+      "gross": 1067134.2725,
+      "cost": 10000.0,
+      "net": 869147.12925,
+      "mix": {
+        "none": 2,
+        "sms": 4,
+        "call": 14,
+        "field": 0,
+        "agency": 10,
+        "legal": 0
+      }
+    },
+    {
+      "eps": 25000.0,
+      "gross": 1140836.3669999999,
+      "cost": 19250.0,
+      "net": 919846.43625,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 10,
+        "legal": 0
+      }
+    },
+    {
+      "eps": 40000.0,
+      "gross": 1140836.3669999999,
+      "cost": 19250.0,
+      "net": 919846.43625,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 10,
+        "legal": 0
+      }
+    },
+    {
+      "eps": 55000.0,
+      "gross": 1140836.3669999999,
+      "cost": 19250.0,
+      "net": 919846.43625,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 10,
+        "legal": 0
+      }
+    },
+    {
+      "eps": 70000.0,
+      "gross": 1140836.3669999999,
+      "cost": 19250.0,
+      "net": 919846.43625,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 10,
+        "legal": 0
+      }
+    },
+    {
+      "eps": 85000.0,
+      "gross": 1140836.3669999999,
+      "cost": 19250.0,
+      "net": 919846.43625,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 10,
+        "legal": 0
+      }
+    },
+    {
+      "eps": 100000.0,
+      "gross": 1214408.9925,
+      "cost": 99929.0,
+      "net": 968357.6187499999,
+      "mix": {
+        "none": 1,
+        "sms": 5,
+        "call": 9,
+        "field": 5,
+        "agency": 7,
+        "legal": 3
+      }
+    },
+    {
+      "eps": 115000.0,
+      "gross": 1253405.2349999999,
+      "cost": 114630.0,
+      "net": 1016771.5857499999,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 7,
+        "legal": 3
+      }
+    },
+    {
+      "eps": 130000.0,
+      "gross": 1281676.653,
+      "cost": 129879.0,
+      "net": 1050250.2482499997,
+      "mix": {
+        "none": 1,
+        "sms": 1,
+        "call": 13,
+        "field": 5,
+        "agency": 6,
+        "legal": 4
+      }
+    },
+    {
+      "eps": 145000.0,
+      "gross": 1306667.547,
+      "cost": 144838.0,
+      "net": 1077553.3687500001,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 5,
+        "legal": 5
+      }
+    },
+    {
+      "eps": 160000.0,
+      "gross": 1331056.1174999997,
+      "cost": 159950.0,
+      "net": 1106601.8912499999,
+      "mix": {
+        "none": 1,
+        "sms": 4,
+        "call": 10,
+        "field": 5,
+        "agency": 4,
+        "legal": 6
+      }
+    },
+    {
+      "eps": 175000.0,
+      "gross": 1355924.9829999998,
+      "cost": 174829.0,
+      "net": 1135298.14875,
+      "mix": {
+        "none": 1,
+        "sms": 1,
+        "call": 13,
+        "field": 5,
+        "agency": 3,
+        "legal": 7
+      }
+    },
+    {
+      "eps": 190000.0,
+      "gross": 1375245.253,
+      "cost": 189815.0,
+      "net": 1153067.72275,
+      "mix": {
+        "none": 0,
+        "sms": 1,
+        "call": 14,
+        "field": 5,
+        "agency": 2,
+        "legal": 8
+      }
+    },
+    {
+      "eps": 205000.0,
+      "gross": 1398606.4464999996,
+      "cost": 204924.0,
+      "net": 1180247.1424999996,
+      "mix": {
+        "none": 1,
+        "sms": 4,
+        "call": 10,
+        "field": 5,
+        "agency": 1,
+        "legal": 9
+      }
+    },
+    {
+      "eps": 220000.0,
+      "gross": 1418757.4164999996,
+      "cost": 219885.0,
+      "net": 1198872.4164999996,
+      "mix": {
+        "none": 1,
+        "sms": 3,
+        "call": 11,
+        "field": 5,
+        "agency": 0,
+        "legal": 10
+      }
+    },
+    {
+      "eps": 235000.0,
+      "gross": 1425645.6809999999,
+      "cost": 224776.0,
+      "net": 1200869.6809999999,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 0,
+        "legal": 10
+      }
+    },
+    {
+      "eps": 250000.0,
+      "gross": 1425645.6809999999,
+      "cost": 224776.0,
+      "net": 1200869.6809999999,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 0,
+        "legal": 10
+      }
+    },
+    {
+      "eps": 265000.0,
+      "gross": 1425645.6809999999,
+      "cost": 224776.0,
+      "net": 1200869.6809999999,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 0,
+        "legal": 10
+      }
+    },
+    {
+      "eps": 280000.0,
+      "gross": 1425645.6809999999,
+      "cost": 224776.0,
+      "net": 1200869.6809999999,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 0,
+        "legal": 10
+      }
+    },
+    {
+      "eps": 295000.0,
+      "gross": 1425645.6809999999,
+      "cost": 224776.0,
+      "net": 1200869.6809999999,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 0,
+        "legal": 10
+      }
+    },
+    {
+      "eps": 310000.0,
+      "gross": 1425645.6809999999,
+      "cost": 224776.0,
+      "net": 1200869.6809999999,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 0,
+        "legal": 10
+      }
+    },
+    {
+      "eps": 325000.0,
+      "gross": 1425645.6809999999,
+      "cost": 224776.0,
+      "net": 1200869.6809999999,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 0,
+        "legal": 10
+      }
+    },
+    {
+      "eps": 340000.0,
+      "gross": 1425645.6809999999,
+      "cost": 224776.0,
+      "net": 1200869.6809999999,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 0,
+        "legal": 10
+      }
+    },
+    {
+      "eps": 355000.0,
+      "gross": 1425645.6809999999,
+      "cost": 224776.0,
+      "net": 1200869.6809999999,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 0,
+        "legal": 10
+      }
+    },
+    {
+      "eps": 370000.0,
+      "gross": 1425645.6809999999,
+      "cost": 224776.0,
+      "net": 1200869.6809999999,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 0,
+        "legal": 10
+      }
+    },
+    {
+      "eps": 385000.0,
+      "gross": 1425645.6809999999,
+      "cost": 224776.0,
+      "net": 1200869.6809999999,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 0,
+        "legal": 10
+      }
+    },
+    {
+      "eps": 400000.0,
+      "gross": 1425645.6809999999,
+      "cost": 224776.0,
+      "net": 1200869.6809999999,
+      "mix": {
+        "none": 0,
+        "sms": 0,
+        "call": 15,
+        "field": 5,
+        "agency": 0,
+        "legal": 10
+      }
+    }
+  ],
+  "meta": {
+    "GA": [
+      {
+        "objective": 1096131.9262499998,
+        "feasible": true,
+        "time": 1.7745694580007694
+      },
+      {
+        "objective": 1099661.34325,
+        "feasible": true,
+        "time": 1.7650947910005925
+      },
+      {
+        "objective": 1096535.05375,
+        "feasible": true,
+        "time": 1.7678948749999108
+      },
+      {
+        "objective": 1097663.6964999998,
+        "feasible": true,
+        "time": 1.7798660829994333
+      },
+      {
+        "objective": 1098368.4482500001,
+        "feasible": true,
+        "time": 1.7919618340001762
+      },
+      {
+        "objective": 1094927.392,
+        "feasible": true,
+        "time": 1.7758492920002027
+      },
+      {
+        "objective": 1092130.4422499998,
+        "feasible": true,
+        "time": 1.8010912909994659
+      },
+      {
+        "objective": 1083133.1609999998,
+        "feasible": true,
+        "time": 1.7828542080005718
+      },
+      {
+        "objective": 1093879.01875,
+        "feasible": true,
+        "time": 1.8101312090002466
+      },
+      {
+        "objective": 1096262.58225,
+        "feasible": true,
+        "time": 1.7885665000012523
+      }
+    ],
+    "SA": [
+      {
+        "objective": 1099661.34325,
+        "feasible": true,
+        "time": 1.881092625000747
+      },
+      {
+        "objective": 1099661.34325,
+        "feasible": true,
+        "time": 1.8629946669989295
+      },
+      {
+        "objective": 1099661.34325,
+        "feasible": true,
+        "time": 1.8535646670006827
+      },
+      {
+        "objective": 1099661.34325,
+        "feasible": true,
+        "time": 1.8983388749984442
+      },
+      {
+        "objective": 1099661.34325,
+        "feasible": true,
+        "time": 1.8934367500005465
+      },
+      {
+        "objective": 1099661.34325,
+        "feasible": true,
+        "time": 1.8850419579994195
+      },
+      {
+        "objective": 1099661.34325,
+        "feasible": true,
+        "time": 1.889111625001533
+      },
+      {
+        "objective": 1099661.34325,
+        "feasible": true,
+        "time": 1.8853975839992927
+      },
+      {
+        "objective": 1099661.34325,
+        "feasible": true,
+        "time": 1.9124803750000865
+      },
+      {
+        "objective": 1094422.91725,
+        "feasible": true,
+        "time": 1.8887909580007545
+      }
+    ]
+  }
+}
