@@ -1,4 +1,7 @@
-"""Render docs/DOCUMENTATION.md -> docs/DOCUMENTATION.pdf (Markdown + KaTeX, printed by headless Chrome)."""
+"""Render docs/<NAME>.md -> docs/<NAME>.pdf (Markdown + KaTeX, printed by headless Chrome).
+
+Usage: python src/05_build_pdf.py [NAME] [--keep-html]   (NAME defaults to DOCUMENTATION)
+"""
 import pathlib
 import subprocess
 import sys
@@ -8,11 +11,12 @@ import markdown
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
+NAME = next((a for a in sys.argv[1:] if not a.startswith("--")), "DOCUMENTATION")
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 KATEX = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9"
 
 body = markdown.markdown(
-    (DOCS / "DOCUMENTATION.md").read_text(encoding="utf-8"),
+    (DOCS / f"{NAME}.md").read_text(encoding="utf-8"),
     extensions=["tables", "fenced_code", "pymdownx.arithmatex"],
     extension_configs={"pymdownx.arithmatex": {"generic": True}},
 )
@@ -49,10 +53,10 @@ document.body.dataset.ready = "1";
 with tempfile.TemporaryDirectory() as tmp:
     src = pathlib.Path(tmp) / "doc.html"
     src.write_text(html, encoding="utf-8")
-    out = DOCS / "DOCUMENTATION.pdf"
+    out = DOCS / f"{NAME}.pdf"
     subprocess.run([CHROME, "--headless=new", "--disable-gpu", f"--user-data-dir={tmp}/profile",
                     "--no-pdf-header-footer", "--virtual-time-budget=20000",
                     f"--print-to-pdf={out}", src.as_uri()], check=True, stderr=subprocess.DEVNULL)
     if "--keep-html" in sys.argv:
-        (DOCS / "_print.html").write_text(html, encoding="utf-8")
+        (DOCS / f"_{NAME}_print.html").write_text(html, encoding="utf-8")
 print("wrote", out)
