@@ -465,7 +465,10 @@ All MILP and stochastic incumbents passed exact constraint verification (\texttt
     \item \textbf{Role of Meta-Heuristics Relative to Custom B\&B:} Our pure-Python Branch-and-Bound solver already stalls within $1{,}000$ nodes on $N=100$, whereas SA and GA scale near-linearly in evaluation cost ($16$--$29\text{ s}$) with guaranteed feasibility. More practically, exact MILP requires linear separability; real-world non-linear multi-touch response saturation or black-box uplift predictors break linear formulations, making an integer-vector SA/GA engine necessary once linear assumptions are relaxed in Phase~II.
 \end{itemize}
 
+{\small
 \begin{thebibliography}{99}
+\setlength{\itemsep}{0.5pt}
+\setlength{\parskip}{0pt}
 \bibitem{taha2017} H.~A. Taha, \emph{Operations Research: An Introduction}, 10th~ed. Pearson, 2017.
 \bibitem{land1960} A.~H. Land and A.~G. Doig, ``An automatic method of solving discrete programming problems,'' \emph{Econometrica}, vol.~28, no.~3, pp. 497--520, 1960.
 \bibitem{highs2018} Q.~Huangfu and J.~A.~J. Hall, ``Parallelizing the dual revised simplex method,'' \emph{Math. Program. Comput.}, vol.~10, no.~1, pp. 119--142, 2018.
@@ -479,5 +482,6 @@ All MILP and stochastic incumbents passed exact constraint verification (\texttt
 \bibitem{lendingclub} Kaggle, ``Lending Club loan data: Financial recovery and charge-off records,'' \url{https://www.kaggle.com/datasets/adarshsng/lending-club-loan-data-csv}, 2019.
 \bibitem{thaidebtact} Kingdom of Thailand, ``Debt Collection Act B.E. 2558 (2015),'' \emph{Royal Thai Government Gazette}, vol.~132, Part~16~A, 2015.
 \end{thebibliography}
+}
 
 \end{document}
