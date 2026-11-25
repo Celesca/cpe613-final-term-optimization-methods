@@ -1,3 +1,5 @@
 .venv
 data/defaulted_raw.csv.gz
 archive-2
+__pycache__/
+*.pyc

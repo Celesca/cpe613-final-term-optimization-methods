@@ -3,6 +3,7 @@
 Usage: python src/05_build_pdf.py [NAME] [--keep-html]   (NAME defaults to DOCUMENTATION)
 """
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -12,7 +13,17 @@ import markdown
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
 NAME = next((a for a in sys.argv[1:] if not a.startswith("--")), "DOCUMENTATION")
-CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+CHROME = next(
+    (p for p in (
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        shutil.which("google-chrome"),
+        shutil.which("chromium"),
+        shutil.which("chromium-browser"),
+    ) if p and pathlib.Path(p).exists()),
+    None,
+)
+if CHROME is None:
+    raise FileNotFoundError("No Chrome/Chromium executable found for PDF rendering.")
 KATEX = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9"
 
 body = markdown.markdown(
