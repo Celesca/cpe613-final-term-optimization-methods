@@ -142,6 +142,16 @@
 
 \makeproposalheader
 
+\setcounter{tocdepth}{2}
+\begingroup
+\small
+\setlength{\parskip}{0.4pt}
+\tableofcontents
+\endgroup
+\vspace{0.5em}
+{\color{docaccent!40}\hrule height 0.5pt}
+\vspace{0.5em}
+
 \section{Project Name}
 \textbf{Debt Collection Strategy Allocation using Mathematical Programming and Meta-Heuristics}
 
@@ -382,14 +392,14 @@ Table~\ref{tab:master} reports exact objectives, bounds, greedy baselines, stoch
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.95\textwidth]{fig_p1_scaling_gap.png}
+\includegraphics[width=0.86\textwidth]{fig_p1_scaling_gap.png}
 \caption{Optimality gap scaling relative to HiGHS MILP (left) and root LP integrality gap collapse under disaggregated linking (right).}
 \label{fig:gap}
 \end{figure}
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.80\textwidth]{fig_p1_scaling_time.png}
+\includegraphics[width=0.72\textwidth]{fig_p1_scaling_time.png}
 \caption{Wall-clock CPU runtime across portfolio scale ($N=30, 100, 300$, proportional capacity regime).}
 \label{fig:time}
 \end{figure}
@@ -404,7 +414,7 @@ Table~\ref{tab:master} reports exact objectives, bounds, greedy baselines, stoch
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.95\textwidth]{fig_p1_convergence_ablation.png}
+\includegraphics[width=0.86\textwidth]{fig_p1_convergence_ablation.png}
 \caption{Search convergence on $N=30$ showing SA retainer-barrier trapping at $T_0=2\times 10^4$ (left) and $N=300$ scaling behavior (right).}
 \label{fig:conv}
 \end{figure}
@@ -433,7 +443,7 @@ Table~\ref{tab:sensitivity} details resource utilization, LP shadow prices, and 
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.90\textwidth]{fig_p1_strategy_mix_scales.png}
+\includegraphics[width=0.75\textwidth]{fig_p1_strategy_mix_scales.png}
 \caption{Optimal allocation share by channel across cohorts and capacity regimes.}
 \label{fig:mix}
 \end{figure}
