@@ -1,6 +1,7 @@
 # Debt Collection Strategy Allocation in Thai Baht
 
-**CPE 613 Optimization Methods — Term Project Report**
+**CPE 613 Optimization Methods — Term Project Report (Phase I)**  
+**Team Members:** Yuil Tripathee (`69070701612`), Sawit Koseeyaumporn (`69070701621`)  
 Mathematical programming and meta-heuristics for assigning collection channels to delinquent loan accounts.
 
 ---
@@ -417,6 +418,34 @@ are not. The full account list is in `data/optimal_assignment_N30.csv`.
 
 ![GA and SA convergence](fig_convergence.png)
 
+### 9.3 Scaling, Held-Out Validation, and SA Temperature Ablation (`03b_phase1_benchmark.py`)
+
+To evaluate algorithmic scaling across the full 300-account pool and verify out-of-sample stability on unseen accounts (`TH0031–TH0060`), we executed 3-seed benchmarks (`seeds = 0, 1, 2`) under two capacity regimes while holding institutional law-firm contract parameters invariant ($F = ฿40{,}000$, $L = 3$):
+1. **Regime 1 (Proportional Operational Capacities):** $B_{\max}, H, V, M$ scale by $N/30$ (`×3.33` for $N=100$, `×10` for $N=300$).
+2. **Regime 2 (Frozen Baseline Capacities):** $B_{\max}, H, V, M$ remain fixed at $N=30$ limits (`฿150k, 12h, 5 slots, 10 hard-cap`) under $3.3\times$ and $10\times$ portfolio load.
+
+| Instance & Regime | Vars / Cons | MILP $Z^*$ (THB) | MILP Time | Root LP Gap | Greedy Gap (Time) | GA Mean Gap (Time) | SA Mean Gap (Time) |
+| :--- | :---: | ---: | :---: | :---: | :---: | :---: | :---: |
+| **`N30_main`** | 161 / 61 | `1,099,661.34` | `0.40 s` | `1.411%` | `15.63%` (`0.54 s`) | `0.202%` (`15.78 s`) | `0.000%` (`16.40 s`) |
+| **`N30_unseenB`** | 157 / 61 | `1,365,227.21` | `0.56 s` | `1.929%` | `14.38%` (`0.32 s`) | `0.568%` (`14.56 s`) | `0.000%` (`17.75 s`) |
+| **`N100_prop`** | 533 / 191 | `4,260,700.84` | `1.77 s` | `0.086%` | `20.65%` (`5.13 s`) | `0.778%` (`18.97 s`) | `0.265%` (`21.79 s`) |
+| **`N300_prop`** | 1625 / 576 | `15,493,104.26` | `1.71 s` | `0.013%` | `20.99%` (`55.70 s`) | `2.287%` (`17.18 s`) | `0.683%` (`18.31 s`) |
+| **`N100_frozen`** | 533 / 191 | `2,803,548.13` | `1.61 s` | `1.269%` | `9.50%` (`2.30 s`) | `3.123%` (`14.34 s`) | `0.456%` (`16.35 s`) |
+| **`N300_frozen`** | 1625 / 576 | `7,158,140.96` | `2.01 s` | `1.280%` | `4.19%` (`19.23 s`) | `3.941%` (`21.96 s`) | `2.914%` (`29.35 s`) |
+
+* **Paired Statistical Comparison (18 matched runs):** Across all 6 instances $\times$ 3 seeds, SA achieved a pooled mean gap of **`0.720%`** vs GA's **`1.816%`** (two-sided Wilcoxon signed-rank test, $p = 0.00035$). Uniform crossover disrupts constrained resource allocations at $N=300$, whereas SA's 1-gene/swap moves preserve near-saturated budget efficiency.
+* **Custom B&B Scaling:** `N30_unseenB` closed optimality in `1,697` nodes (`11.80 s`), whereas on `N100_prop` a `1,000`-node budget (`37.43 s`) stalled at the Greedy incumbent (`฿3,380,802`), illustrating exponential worst-case growth relative to bounded-time meta-heuristics.
+* **SA Retainer-Barrier Ablation ($N=30$, 3 seeds):** Lowering $T_0$ from `1,000,000` to `20,000` trapped `3/3` seeds at `฿944,293.22` (`14.13%` gap, `y=0`, zero legal cases), empirically confirming the fixed-charge energy barrier.
+* **Frozen-Capacity Shadow Prices:** Holding staff fixed up to $N=300$ drives SMS/LINE usage from `3.3%` to `77.3%` (`232/300` accounts) while elevating call-hour marginal value from `฿0` to `฿42,910/h` and field-visit marginal value to `฿71,653/visit`.
+
+![Phase I optimality gap and LP tightness](fig_p1_scaling_gap.png)
+
+![Phase I runtime scaling](fig_p1_scaling_time.png)
+
+![Phase I convergence and SA ablation](fig_p1_convergence_ablation.png)
+
+![Strategy mix across scales and regimes](fig_p1_strategy_mix_scales.png)
+
 ---
 
 ## 10. Sensitivity analysis (shadow prices, midterm P2 logic)
@@ -490,6 +519,7 @@ uv venv .venv && uv pip install --python .venv/bin/python pandas numpy scikit-le
 .venv/bin/python src/01_explore.py            # extract the 262k defaulted loans -> data/defaulted_raw.csv.gz
 .venv/bin/python src/02_model_and_dataset.py  # train the model, build the THB pool -> data/accounts_*.csv
 .venv/bin/python src/03_run_experiments.py    # all solvers, sensitivity, Pareto, figures -> data/, docs/
+.venv/bin/python src/03b_phase1_benchmark.py # Phase I scaling (N=30,100,300), unseen B, ablation -> data/, docs/
 .venv/bin/python src/04_build_frontend.py     # embed data -> frontend/index.html
 .venv/bin/python src/05_build_pdf.py          # this report -> docs/DOCUMENTATION.pdf
 ```
@@ -497,9 +527,12 @@ uv venv .venv && uv pip install --python .venv/bin/python pandas numpy scikit-le
 | Path | Contents |
 | :--- | :--- |
 | `src/optimizer.py` | model and every solver |
+| `src/03b_phase1_benchmark.py` | reproducible Phase I scaling, ablation, stats & `fig_p1_*.png` |
 | `data/accounts_N30.csv`, `data/accounts_pool.csv` | report instance and 300-account pool |
 | `data/model_report.json` | ML metrics and grade profile |
-| `data/results_N30.json`, `data/optimal_assignment_N30.csv` | full results |
+| `data/results_N30.json`, `data/optimal_assignment_N30.csv` | full baseline results |
+| `data/phase1_benchmark.json`, `data/phase1_*.csv` | Phase I scaling logs, seed table, statistical summaries |
+| `docs/PHASE1_MEMO.md` | concise Phase I engineering memo |
 | `docs/fig_*.png` | figures |
 | `frontend/template.html` → `frontend/index.html` | simulator source and built page |
 
