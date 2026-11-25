@@ -92,14 +92,15 @@
 \newcommand{\CourseName}{Optimization Methods}
 \newcommand{\AssignmentNumberText}{TERM PROJECT}
 \newcommand{\AssignmentNumberVal}{PHASE I REPORT}
-\newcommand{\AssignmentTitle}{Debt Collection Strategy Allocation using Mathematical Programming and Meta-Heuristics}
+\newcommand{\AssignmentTitle}{Debt Collection Strategy Allocation Optimization using Mixed-Integer Linear Programming and Meta-Heuristics}
 \newcommand{\SubTitle}{Single-Objective Formulation, Empirical Recovery Estimation, and Scaling Benchmarks}
 \newcommand{\AssignmentDate}{25 November 2026}
 \newcommand{\StudentOneName}{Yuil Tripathee}
 \newcommand{\StudentOneID}{69070701612}
 \newcommand{\StudentTwoName}{Sawit Koseeyaumporn}
 \newcommand{\StudentTwoID}{69070701621}
-\newcommand{\InstructorNames}{Assoc. Prof. Dr. Naruemon Wattanapongsakorn, Dr. Tossaphol Settawatcharawanit}
+\newcommand{\InstructorNames}{Dr. Tossaphol Settawatcharawanit, Assoc. Prof. Dr. Naruemon Wattanapongsakorn}
+\newcommand{\ProblemClass}{Multidimensional Multiple-Choice Knapsack Problem with Fixed-Charge Activation (MMKP-FC), 0/1 MILP}
 
 \pagestyle{fancy}
 \fancyhf{}
@@ -132,26 +133,26 @@
   {\small\sffamily
   \textbf{Members:} \StudentOneName~(\texttt{\StudentOneID}), \StudentTwoName~(\texttt{\StudentTwoID}) \hfill \textbf{Date:} \AssignmentDate \\
   \textbf{Instructors:} \InstructorNames \\
-  \textbf{Repository:} \texttt{Celesca/cpe613-final-term-optimization-methods}}\\[2pt]
+  \textbf{Problem Class:} \ProblemClass \\
+  \textbf{Repository:} \url{https://github.com/Celesca/cpe613-final-term-optimization-methods}}\\[2pt]
   {\color{docaccent}\rule{\textwidth}{0.4pt}}
   \endgroup
-  \vspace{0.2em}
 }
 
 \begin{document}
 
 \makeproposalheader
 
-\section{Project Name}
-\textbf{Debt Collection Strategy Allocation using Mathematical Programming and Meta-Heuristics}
-
-\emph{Problem Class:} Multidimensional Multiple-Choice Knapsack Problem with Fixed-Charge Activation (MMKP-FC), formulated as a 0--1 Mixed-Integer Linear Program (MILP).
-
-\section{Student Names and IDs}
-\begin{enumerate}
-    \item \textbf{\StudentOneName} --- Student ID: \texttt{\StudentOneID}
-    \item \textbf{\StudentTwoName} --- Student ID: \texttt{\StudentTwoID}
-\end{enumerate}
+\setcounter{tocdepth}{2}
+\begingroup
+\sffamily\small
+\setlength{\parskip}{0pt}
+\vspace{-0.4em}
+\tableofcontents
+\endgroup
+\vspace{0.25em}
+{\color{docaccent!40}\hrule height 0.5pt}
+\vspace{0.35em}
 
 \section{Project Description and Scope}
 
@@ -173,11 +174,11 @@ Figure~\ref{fig:workflow} summarizes the pipeline connecting LendingClub empiric
 \begin{figure}[!ht]
 \centering
 \begin{tikzpicture}[
-    node distance=0.8cm and 0.85cm,
+    node distance=1.0cm and 0.85cm,
     every node/.style={font=\sffamily\scriptsize},
-    box/.style={rectangle, draw=docaccent, fill=boxbg, rounded corners=2pt, minimum height=0.62cm, align=center, inner sep=4pt, line width=0.7pt},
-    databox/.style={rectangle, draw=strings, fill=strings!8!white, rounded corners=2pt, minimum height=0.62cm, align=center, inner sep=4pt, line width=0.7pt},
-    optbox/.style={rectangle, draw=comments, fill=comments!8!white, rounded corners=2pt, minimum height=0.72cm, align=center, inner sep=5pt, line width=0.9pt, font=\sffamily\bfseries\scriptsize},
+    box/.style={rectangle, draw=docaccent, fill=boxbg, rounded corners=2pt, minimum height=0.66cm, align=center, inner sep=4.5pt, line width=0.7pt},
+    databox/.style={rectangle, draw=strings, fill=strings!8!white, rounded corners=2pt, minimum height=0.66cm, align=center, inner sep=4.5pt, line width=0.7pt},
+    optbox/.style={rectangle, draw=comments, fill=comments!8!white, rounded corners=2pt, minimum height=0.78cm, align=center, inner sep=6pt, line width=0.9pt, font=\sffamily\bfseries\scriptsize},
     arrow/.style={-{Stealth[scale=0.9]}, line width=0.7pt, draw=docaccent!80!black}
 ]
 \node[databox] (raw) {\textbf{LendingClub Raw Data}\\$2,260,668$ Loans ($145$ Cols)};
@@ -185,24 +186,24 @@ Figure~\ref{fig:workflow} summarizes the pipeline connecting LendingClub empiric
 \node[databox, right=of filter] (ml) {\textbf{2-Part Hurdle Model}\\$\rho_i = P(\text{rec}>0)\cdot\mathbb{E}[r]\cdot e^{-\gamma\,\text{dpd}}$};
 \node[box, right=of ml] (thb) {\textbf{THB Portfolio Pool}\\$300$ Stratified Accounts};
 
-\node[optbox, below=1.0cm of $(filter.south)!0.5!(ml.south)$] (opt) {
+\node[optbox, below=1.45cm of $(filter.south)!0.5!(ml.south)$] (opt) {
     \textbf{PHASE I SINGLE-OBJECTIVE ENGINE}\\
     $\max Z = \sum v_{i,k}x_{i,k} - Fy \quad \text{s.t. } \text{Budget, Labor, Visits, Conduct Cap, Retainer}$
 };
 
-\node[box, below left=0.9cm and -0.3cm of opt] (exact) {
+\node[box, below left=1.2cm and -0.35cm of opt] (exact) {
     \textbf{Exact Methods \& Bounds}\\
     HiGHS MILP $\mid$ Custom B\&B\\
     LP Duals $\mid$ DP Relaxation $\mid$ Greedy
 };
 
-\node[box, below right=0.9cm and -0.3cm of opt] (meta) {
+\node[box, below right=1.2cm and -0.35cm of opt] (meta) {
     \textbf{Meta-Heuristics (3 Seeds)}\\
     Genetic Algorithm (GA)\\
     Simulated Annealing (SA) + $T_0$ Ablation
 };
 
-\node[box, below=0.9cm of opt] (channels) {
+\node[box, below=1.2cm of opt] (channels) {
     \textbf{Validation Benchmarks}\\
     $N=30$ Main $\mid$ $N=30$ Unseen B $\mid$ $N=100, 300$ (Prop. \& Frozen Caps)
 };
@@ -216,8 +217,10 @@ Figure~\ref{fig:workflow} summarizes the pipeline connecting LendingClub empiric
 \draw[arrow] (meta.north) |- (opt.east);
 
 \begin{scope}[on background layer]
-    \node[draw=gray!50, dashed, fill=gray!3!white, rounded corners=4pt, fit=(raw) (filter) (ml) (thb), inner sep=6pt, label={[font=\sffamily\bfseries\tiny, color=gray!70!black, anchor=north west]north west:STAGE I: DATA EXTRACTION \& PROPENSITY ESTIMATION}] {};
-    \node[draw=docaccent!50, dashed, fill=docaccent!2!white, rounded corners=4pt, fit=(opt) (exact) (meta) (channels), inner sep=6pt, label={[font=\sffamily\bfseries\tiny, color=docaccent, anchor=north west]north west:STAGE II: SINGLE-OBJECTIVE OPTIMIZATION \& SCALING BENCHMARKS}] {};
+    \node[draw=gray!50, dashed, fill=gray!3!white, rounded corners=4pt, fit=(raw) (filter) (ml) (thb), inner sep=8pt, yshift=1pt] (bg1) {};
+    \node[font=\sffamily\bfseries\tiny, color=gray!70!black, anchor=north west] at ($(bg1.north west)+(3pt,-2pt)$) {STAGE I: DATA EXTRACTION \& PROPENSITY ESTIMATION};
+    \node[draw=docaccent!50, dashed, fill=docaccent!2!white, rounded corners=4pt, fit=(opt) (exact) (meta) (channels), inner xsep=8pt, inner ysep=11pt, yshift=2pt] (bg2) {};
+    \node[font=\sffamily\bfseries\tiny, color=docaccent, anchor=north west] at ($(bg2.north west)+(3pt,-2pt)$) {STAGE II: SINGLE-OBJECTIVE OPTIMIZATION \& SCALING BENCHMARKS};
 \end{scope}
 \end{tikzpicture}
 \caption{Phase I end-to-end architecture connecting empirical recovery estimation with exact MILP solvers and stochastic meta-heuristics.}
@@ -233,7 +236,7 @@ Figure~\ref{fig:workflow} summarizes the pipeline connecting LendingClub empiric
     \item \textbf{Currency \& Costs:} LendingClub USD balances convert at fixed $33.0\text{ THB/USD}$. Direct costs and commissions ($25\%$ for agencies, consistent with the $16.6\%$ historical fee-to-recovery ratio in LendingClub) are deterministic planning figures.
     \item \textbf{Thai Debt Collection Act B.E. 2558 Compliance:} Hard collection is bounded by cap $M$; accounts with $\text{dpd}_i \ge 90$ cannot be assigned ``No Action'' ($k=0$); litigation ($k=5$) requires $B_i \ge \text{THB~}100{,}000$.
     \item \textbf{Resource vs. Contract Scaling Invariance:} Organizational operational limits ($B_{\max}, H, V, M$) scale proportionally with portfolio size ($N/30$) in Regime~1 (and remain fixed at $N=30$ staffing levels in Regime~2 stress tests). External law-firm contract parameters ($F = \text{THB~}40{,}000$, $L = 3$ minimum cases) remain fixed across all $N$, because they represent a single retainer agreement rather than internal headcount.
-    \item \textbf{Synthetic Behavioral Fields (Seed 613):} Because LendingClub omits days-past-due and phone status, $\text{dpd}_i \in \{30,60,90,120,180\}$ (probabilities $\{0.30,0.25,0.20,0.15,0.10\}$) and $\text{reachable}_i \sim \text{Bernoulli}(0.85)$ ($0.70$ for grades E--G) are synthetically generated with fixed seed \texttt{613}.
+    \item \textbf{Synthetic Behavioral Fields (Seed 613):} Because LendingClub omits days-past-due and phone status, $\text{dpd}_i \in \{30,60,90,120,180\}$ (probabilities $\{0.30,0.25,0.20,0.15,0.10\}$) and $\text{reachable}_i \sim \text{Bernoulli}(0.85)$ ($0.70$ for grades E through G) are synthetically generated with fixed seed \texttt{613}.
 \end{enumerate}
 
 \section{Model Formulation and Dimensions}
@@ -285,35 +288,35 @@ subject to:
 Constraint~(\ref{eq:c6}) is written in disaggregated per-account form ($x_{i,5} \le y$) rather than aggregate form ($\sum_i x_{i,5} \le N y$). Both share identical integer solutions, but disaggregation produces a substantially tighter continuous LP relaxation bound for Branch-and-Bound pruning. In addition, a bi-criterion formulation ($\max f_1 = \sum \mathbb{E}[R_{i,k}]x_{i,k}$ vs. $\min f_2 = \sum c_{i,k}x_{i,k} + Fy$) is implemented as a preliminary $\varepsilon$-constraint sweep in the repository, with full MOEA comparisons reserved for Phase~II.
 
 \subsection{Empirical Model Size Across Benchmarks}
-On $N=30$ Main (\texttt{accounts\_N30.csv}), $30 \times 6 = 180$ naive pairs lose $4$ legal-ineligible accounts ($B_i < 100\text{k}$) and $16$ $\text{dpd} \ge 90$ no-action pairs; \texttt{TH0028} violates both, so $4+16-1=20$ pairs are pruned, leaving $\mathbf{160}$ binary $x_{i,k}$ plus $\mathbf{1}$ retainer ($161$ variables). Disaggregated linking (\ref{eq:c6}) creates rows only for the $26$ legal-eligible accounts, yielding $30 \text{ (C1)} + 4 \text{ (C2--C5)} + 26 \text{ (C6)} + 1 \text{ (C7)} = \mathbf{61}$ non-redundant rows. Table~\ref{tab:dims} summarizes dimensions across all benchmark cohorts.
+On $N=30$ Main (\texttt{accounts\_N30.csv}), $30 \times 6 = 180$ naive pairs lose $4$ legal-ineligible accounts ($B_i < 100\text{k}$) and $16$ $\text{dpd} \ge 90$ no-action pairs; \texttt{TH0028} violates both, so $4+16-1=20$ pairs are pruned, leaving $\mathbf{160}$ binary $x_{i,k}$ plus $\mathbf{1}$ retainer ($161$ variables). Disaggregated linking (\ref{eq:c6}) creates rows only for the $26$ legal-eligible accounts, yielding $30 \text{ (C1)} + 4 \text{ (C2 to C5)} + 26 \text{ (C6)} + 1 \text{ (C7)} = \mathbf{61}$ non-redundant rows. Table~\ref{tab:dims} summarizes dimensions across all benchmark cohorts.
 
 \begin{table}[!ht]
 \centering
 \caption{Model dimensions verified empirically on portfolio cohorts.}
 \label{tab:dims}
 \small
-\begin{tabularx}{\textwidth}{Xrrrrr}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}l r r r r r@{}}
 \toprule
 \textbf{Cohort} & \textbf{Accounts ($N$)} & \textbf{Binary $x_{i,k}$ + $y$} & \textbf{C6 Linking Rows} & \textbf{Total Constraints} & \textbf{$\log_{10} |S|$} \\
 \midrule
-\texttt{N30\_main} (\texttt{TH0001}--\texttt{TH0030}) & 30 & 160 + 1 = 161 & 26 & 61 & 21.74 \\
-\texttt{N30\_unseenB} (\texttt{TH0031}--\texttt{TH0060}) & 30 & 156 + 1 = 157 & 26 & 61 & 21.43 \\
-\texttt{N100} (\texttt{TH0001}--\texttt{TH0100}) & 100 & 532 + 1 = 533 & 86 & 191 & 72.32 \\
-\texttt{N300} (\texttt{TH0001}--\texttt{TH0300}) & 300 & 1,624 + 1 = 1,625 & 271 & 576 & 219.31 \\
+\texttt{N30\_main} (\texttt{TH0001} to \texttt{TH0030}) & 30 & 160 + 1 = 161 & 26 & 61 & 21.74 \\
+\texttt{N30\_unseenB} (\texttt{TH0031} to \texttt{TH0060}) & 30 & 156 + 1 = 157 & 26 & 61 & 21.43 \\
+\texttt{N100} (\texttt{TH0001} to \texttt{TH0100}) & 100 & 532 + 1 = 533 & 86 & 191 & 72.32 \\
+\texttt{N300} (\texttt{TH0001} to \texttt{TH0300}) & 300 & 1,624 + 1 = 1,625 & 271 & 576 & 219.31 \\
 \bottomrule
-\end{tabularx}
+\end{tabular*}
 \end{table}
 
 \section{Input Dataset and Recovery Model}
 Empirical data come from the Kaggle LendingClub loan corpus ($2,260,668$ loans, $145$ columns). Filtering \texttt{Charged Off} and \texttt{Default} loans yields $262,447$ records; excluding exposures with $\text{EAD} = \texttt{funded\_amnt} - \texttt{total\_rec\_prncp} < \$500$ leaves \textbf{$260,640$ accounts} (mean observed recovery rate $10.61\%$, average collection expense $16.6\%$ of gross recovery).
 
-Because issue credit grades (A--G) show nearly flat recovery rates ($10.35\%$ for Grade A to $11.23\%$ for Grade F, test AUC $= 0.5299$), base propensity $\rho_i$ is predicted via a two-part hurdle model trained on 24 non-leaking loan/borrower features (75/25 split, \texttt{HistGradientBoostingClassifier} + \texttt{HistGradientBoostingRegressor}, 300 trees, lr $0.08$):
+Because issue credit grades (A to G) show nearly flat recovery rates ($10.35\%$ for Grade A to $11.23\%$ for Grade F, test AUC $= 0.5299$), base propensity $\rho_i$ is predicted via a two-part hurdle model trained on 24 non-leaking loan/borrower features (75/25 split, \texttt{HistGradientBoostingClassifier} + \texttt{HistGradientBoostingRegressor}, 300 trees, lr $0.08$):
 \begin{equation}
     \rho_i = P(\text{recovery} > 0 \mid \bm{z}_i) \times \mathbb{E}[\text{rate} \mid \text{recovered}, \bm{z}_i] \times \exp(-0.004 \cdot (\text{dpd}_i - 30)), \quad \rho_i \in [0.01, 0.60]
 \end{equation}
 The full classifier achieves test \textbf{AUC $= 0.7660$}, Brier score $0.1722$, and conditional rate MAE $0.0767$. A stratified 300-account pool (\texttt{accounts\_pool.csv}: A 25, B 50, C 75, D 65, E 45, F 25, G 15) is partitioned into \texttt{N30\_main} ($\text{THB~}9{,}037{,}800$), \texttt{N30\_unseenB} ($\text{THB~}11{,}795{,}500$), \texttt{N100} ($\text{THB~}33{,}808{,}800$), and full \texttt{N300} ($\text{THB~}118{,}633{,}300$).
 
-\section{Problem Size Verification}
+\section{Problem Size}
 For \texttt{N30\_main}, $1$ account (\texttt{TH0028}) has $4$ allowed strategies, $18$ accounts have $5$, and $11$ have $6$. Thus, the candidate search space size is:
 \begin{equation}
     |S| = \prod_{i=1}^{30} |K_i| = 4^1 \cdot 5^{18} \cdot 6^{11} \approx \mathbf{5.54 \times 10^{21}} \quad \text{(unconstrained: } 6^{30} \approx 2.21 \times 10^{23}\text{)}
@@ -332,7 +335,7 @@ This exceeds the course minimum ($3 \times 10^6$) by $1.85 \times 10^{15}$; exha
 \end{itemize}
 
 \subsection{Meta-Heuristic Encoding, Penalty, and Parameters}
-Both GA and SA encode plans as integer vectors $\bm{a} = (a_1,\dots,a_N)$ with $a_i \in K_i$, preserving (C1) and eligibility strictly by construction ($y(\bm{a}) = \mathbb{I}(\exists i: a_i = 5)$). Capacity and legal-batch violations enter an external penalty:
+Both GA and SA encode plans as integer vectors $\bm{a} = (a_1,\dots,a_N)$ with $a_i \in K_i$, preserving (C1) and eligibility strictly by construction ($y(\bm{a}) = \mathbf{1}(\exists i: a_i = 5)$). Capacity and legal-batch violations enter an external penalty:
 \begin{equation}
     \text{fit}(\bm{a}) = Z(\bm{a}) - 10^5 \cdot \left( \frac{(\text{Cost}-B_{\max})^+}{1000} + 10(\text{Hours}-H)^+ + 10(\text{Visits}-V)^+ + 10(\text{Hard}-M)^+ + 10(Ly - n_{\text{legal}})^+ \right)
 \end{equation}
@@ -382,7 +385,7 @@ Table~\ref{tab:master} reports exact objectives, bounds, greedy baselines, stoch
 
 \begin{figure}[!ht]
 \centering
-\includegraphics[width=0.95\textwidth]{fig_p1_scaling_gap.png}
+\includegraphics[width=0.86\textwidth]{fig_p1_scaling_gap.png}
 \caption{Optimality gap scaling relative to HiGHS MILP (left) and root LP integrality gap collapse under disaggregated linking (right).}
 \label{fig:gap}
 \end{figure}
@@ -396,7 +399,7 @@ Table~\ref{tab:master} reports exact objectives, bounds, greedy baselines, stoch
 
 \subsection{Bound Hierarchy, Custom B\&B, and SA Ablation}
 \begin{itemize}
-    \item \textbf{Dynamic Programming Upper Bounds:} Solving budget-only DP required $0.01$--$0.70\text{ s}$, yielding infeasible upper bounds \text{THB~}1,148,052 ($N=30$ main, 24 hard cases $>$ 10), \text{THB~}1,411,998 ($N=30$ B), \text{THB~}4,416,394 ($N=100$ prop), and \text{THB~}16,074,847 ($N=300$ prop, 222 hard cases $>$ 100). Across all runs, the strict bound hierarchy $Z_{\text{DP}} \ge \bar{Z}_{\text{LP}} \ge Z^* \ge Z_{\text{SA}} \ge Z_{\text{GA}} \gg Z_{\text{Greedy}}$ holds without exception.
+    \item \textbf{Dynamic Programming Upper Bounds:} Solving budget-only DP required $0.01\text{ to }0.70\text{ s}$, yielding infeasible upper bounds \text{THB~}1,148,052 ($N=30$ main, 24 hard cases $>$ 10), \text{THB~}1,411,998 ($N=30$ B), \text{THB~}4,416,394 ($N=100$ prop), and \text{THB~}16,074,847 ($N=300$ prop, 222 hard cases $>$ 100). Across all runs, the strict bound hierarchy $Z_{\text{DP}} \ge \bar{Z}_{\text{LP}} \ge Z^* \ge Z_{\text{SA}} \ge Z_{\text{GA}} \gg Z_{\text{Greedy}}$ holds without exception.
     \item \textbf{Custom Branch-and-Bound:} On \texttt{N30\_unseenB}, custom B\&B proved optimality in \texttt{1,697} nodes ($848$ pruned, \texttt{11.80 s}). On \texttt{N30\_main}, B\&B located exact $Z^* = \text{THB~}1{,}099{,}661.34$ within a \texttt{10,000}-node budget ($1{,}396$ pruned, \texttt{141.0 s}, heap still open due to tied LP relaxations; the \texttt{20,000}-node log in \texttt{results\_N30.json} closed at \texttt{6,267} nodes). On \texttt{N100\_prop}, a \texttt{1,000}-node budget (\texttt{37.43 s}) remained stuck at the Greedy incumbent ($20.65\%$ gap).
     \item \textbf{SA Initial-Temperature Ablation (\texttt{N30\_main}):} Across 3 seeds with $T_0 = 20{,}000$, all runs froze prematurely at \text{THB~}944,293.22 ($14.13\%$ gap, $y=0$, zero legal cases), whereas $T_0 = 10^6$ hit $Z^*$ on $3/3$ seeds ($0.000\%$ gap). Figure~\ref{fig:conv} shows convergence trajectories.
     \item \textbf{Statistical Test:} Across all 18 paired stochastic runs (6 instances $\times$ 3 seeds), SA achieved an overall mean gap of $0.720\%$ vs. GA's $1.816\%$ (two-sided Wilcoxon signed-rank test, $W = 1.0$, $p = 0.00035$).
@@ -442,20 +445,23 @@ Table~\ref{tab:sensitivity} details resource utilization, LP shadow prices, and 
 
 \subsection{Operational Interpretation of Empirical Findings}
 \begin{enumerate}
-    \item \textbf{Why Greedy Fails ($14.4\%\text{--}21.0\%$ Gap):} Evaluating single-account marginal ratios ($\Delta Z / \Delta \text{cost}$) never triggers litigation ($y=0$), because assigning legal action to one borrower incurs the full $\text{THB~}40{,}000$ retainer fee and violates $L=3$. Consequently, Greedy diverts high-balance accounts to external agencies ($25\%$ commission), spending only $\text{THB~}18{,}925$ on \texttt{N30\_main} and leaving $\text{THB~}171{,}881$ of net value uncaptured. Moreover, its nested upgrade loop scales as $\mathcal{O}(N^2 K)$, taking \texttt{55.70 s} at $N=300$---nearly $3\times$ slower than SA or GA.
-    \item \textbf{Shadow Prices Reveal Bottlenecks:} Under proportional scaling, call-center hours carry zero shadow price ($10.5/12\text{ h}$ used at $N=30$, $96.75/120\text{ h}$ at $N=300$), meaning overtime hiring adds zero value. Conversely, budget, field visits ($\text{THB~}7.7\text{k--}9.0\text{k}$ per visit vs. $\sim \text{THB~}2.5\text{k}$ field cost), and conduct cap $M$ bind tightly. Under frozen staffing (\texttt{N300\_frozen}), the optimizer shifts $77.3\%$ of accounts (\texttt{232/300}) to low-cost SMS/LINE, yet still allocates the exact minimum $L=3$ litigation cases while call-hour marginal value rises to $\text{THB~}42{,}910/\text{h}$.
+    \item \textbf{Why Greedy Fails ($14.4\%\text{ to }21.0\%$ Gap):} Evaluating single-account marginal ratios ($\Delta Z / \Delta \text{cost}$) never triggers litigation ($y=0$), because assigning legal action to one borrower incurs the full $\text{THB~}40{,}000$ retainer fee and violates $L=3$. Consequently, Greedy diverts high-balance accounts to external agencies ($25\%$ commission), spending only $\text{THB~}18{,}925$ on \texttt{N30\_main} and leaving $\text{THB~}171{,}881$ of net value uncaptured. Moreover, its nested upgrade loop scales as $\mathcal{O}(N^2 K)$, taking \texttt{55.70 s} at $N=300$, which is nearly $3\times$ slower than SA or GA.
+    \item \textbf{Shadow Prices Reveal Bottlenecks:} Under proportional scaling, call-center hours carry zero shadow price ($10.5/12\text{ h}$ used at $N=30$, $96.75/120\text{ h}$ at $N=300$), meaning overtime hiring adds zero value. Conversely, budget, field visits ($\text{THB~}7.7\text{k}\text{ to }9.0\text{k}$ per visit vs. $\sim \text{THB~}2.5\text{k}$ field cost), and conduct cap $M$ bind tightly. Under frozen staffing (\texttt{N300\_frozen}), the optimizer shifts $77.3\%$ of accounts (\texttt{232/300}) to low-cost SMS/LINE, yet still allocates the exact minimum $L=3$ litigation cases while call-hour marginal value rises to $\text{THB~}42{,}910/\text{h}$.
     \item \textbf{Retainer Invariance Confirmed:} Treating $F$ and $L$ as fixed contract constants independent of $N$ preserves model validity. An exploratory test erroneously scaling $L \propto N/30$ ($L=30$ at $N=300$) erected a $3\text{M}$ penalty wall that locked SA in the $y=0$ basin ($19.86\%$ gap), whereas fixed $L=3$ yielded a $0.683\%$ SA mean gap.
 \end{enumerate}
 
 \subsection{Exact vs. Meta-Heuristic Trade-Offs (Verification)}
 All MILP and stochastic incumbents passed exact constraint verification (\texttt{violation == 0.0} across all 36 GA/SA runs and 6 MILP solutions). Comparing algorithms yields an honest methodological trade-off:
 \begin{itemize}
-    \item \textbf{Where Exact MILP Wins:} Because the formulation is linear and disaggregated linking ($x_{i,5} \le y$) keeps the continuous polytope tight---shrinking the root LP gap from $1.411\%$ ($N=30$) to $0.013\%$ ($N=300$, only $4$ fractional variables out of $1{,}625$)---compiled C++ HiGHS solves all instances in $0.40$--$2.01\text{ s}$ with a $0\%$ optimality certificate. Meta-heuristics do not outperform HiGHS in runtime or precision on linear problems of this size.
+    \item \textbf{Where Exact MILP Wins:} Because the formulation is linear and disaggregated linking ($x_{i,5} \le y$) keeps the continuous polytope tight (shrinking the root LP gap from $1.411\%$ at $N=30$ to $0.013\%$ at $N=300$, with only $4$ fractional variables out of $1{,}625$), compiled C++ HiGHS solves all instances in $0.40\text{ to }2.01\text{ s}$ with a $0\%$ optimality certificate. Meta-heuristics do not outperform HiGHS in runtime or precision on linear problems of this size.
     \item \textbf{Why SA Outperforms GA ($p = 0.00035$):} At $N=300$, uniform crossover splices half of each parent's $300$-gene assignment vector simultaneously, disrupting delicately balanced resource feasibility and widening GA's gap to $2.287\%$ ($\text{SD} = 71{,}639$). Simulated Annealing executes local 1-gene flips ($70\%$) and pairwise swaps ($30\%$), maintaining near-saturated constraint efficiency ($0.683\%$ gap at $N=300$) while escaping the initial retainer barrier via $T_0 = 10^6$.
-    \item \textbf{Role of Meta-Heuristics Relative to Custom B\&B:} Our pure-Python Branch-and-Bound solver already stalls within $1{,}000$ nodes on $N=100$, whereas SA and GA scale near-linearly in evaluation cost ($16$--$29\text{ s}$) with guaranteed feasibility. More practically, exact MILP requires linear separability; real-world non-linear multi-touch response saturation or black-box uplift predictors break linear formulations, making an integer-vector SA/GA engine necessary once linear assumptions are relaxed in Phase~II.
+    \item \textbf{Role of Meta-Heuristics Relative to Custom B\&B:} Our pure-Python Branch-and-Bound solver already stalls within $1{,}000$ nodes on $N=100$, whereas SA and GA scale near-linearly in evaluation cost ($16\text{ to }29\text{ s}$) with guaranteed feasibility. More practically, exact MILP requires linear separability; real-world non-linear multi-touch response saturation or black-box uplift predictors break linear formulations, making an integer-vector SA/GA engine necessary once linear assumptions are relaxed in Phase~II.
 \end{itemize}
 
+{\small
 \begin{thebibliography}{99}
+\setlength{\itemsep}{0.5pt}
+\setlength{\parskip}{0pt}
 \bibitem{taha2017} H.~A. Taha, \emph{Operations Research: An Introduction}, 10th~ed. Pearson, 2017.
 \bibitem{land1960} A.~H. Land and A.~G. Doig, ``An automatic method of solving discrete programming problems,'' \emph{Econometrica}, vol.~28, no.~3, pp. 497--520, 1960.
 \bibitem{highs2018} Q.~Huangfu and J.~A.~J. Hall, ``Parallelizing the dual revised simplex method,'' \emph{Math. Program. Comput.}, vol.~10, no.~1, pp. 119--142, 2018.
@@ -469,5 +475,6 @@ All MILP and stochastic incumbents passed exact constraint verification (\texttt
 \bibitem{lendingclub} Kaggle, ``Lending Club loan data: Financial recovery and charge-off records,'' \url{https://www.kaggle.com/datasets/adarshsng/lending-club-loan-data-csv}, 2019.
 \bibitem{thaidebtact} Kingdom of Thailand, ``Debt Collection Act B.E. 2558 (2015),'' \emph{Royal Thai Government Gazette}, vol.~132, Part~16~A, 2015.
 \end{thebibliography}
+}
 
 \end{document}
