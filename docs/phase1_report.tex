@@ -157,7 +157,7 @@
 \section{Project Description and Scope}
 
 \subsection{Problem Statement}
-Consumer lenders hold portfolios of delinquent loans across varying delinquency ages and unpaid balances. Every billing cycle, the collections team must assign each delinquent account $i \in \{1,\dots,N\}$ to exactly one recovery channel $k \in \{0,\dots,5\}$:
+Commercial consumer lenders hold portfolios of bad delinquent loans across operational delinquency buckets (\texttt{OC1}: 0 to 30, \texttt{OC2}: 30 to 60, \texttt{OC3}: 60 to 90, and \texttt{OC4}: 90+ days past due). Every billing cycle, the collections team must assign each delinquent account $i \in \{1,\dots,N\}$ to exactly one recovery channel $k \in \{0,\dots,5\}$:
 \begin{enumerate}[label=(\roman*)]
     \item \textbf{No Action / Self-Cure ($k=0$):} Zero direct cost ($\lambda_0 = 0.30$).
     \item \textbf{Digital Reminders ($k=1$):} Automated SMS / LINE OA message ($\text{THB~}25$, $\lambda_1 = 0.55$).
@@ -227,7 +227,10 @@ Figure~\ref{fig:workflow} summarizes the pipeline connecting LendingClub empiric
 \label{fig:workflow}
 \end{figure}
 
-\textbf{Phase I Scope:} Single-period planning over one 30-day cycle across the primary cohort ($N=30$, $\text{THB~}9.04\text{M}$), an unseen held-out cohort ($N=30\text{ B}$, $\text{THB~}11.80\text{M}$), and scaling cohorts ($N=100, 300$ from the 300-account pool). Multi-period sequencing, collector routing, CVaR risk terms, and full multi-objective meta-heuristic Pareto fronts (Phase II scope) are excluded from Phase I deliverables.
+\begin{itemize}
+    \item \textbf{In Scope (Phase I):} Single-period planning over one 30-day cycle with six strategies, four operational caps, one retainer decision, held-out cohort validation (\texttt{N30\_unseenB}, $\text{THB~}11.80\text{M}$), scaling cohorts ($N=30, 100, 300$), and a browser WebAssembly decision simulator (\texttt{frontend/index.html}, built with \texttt{04\_build\_frontend.py} and \texttt{highs@1.15.3}).
+    \item \textbf{Out of Scope (Phase II / Future Work):} Multi-period sequential escalation, field-collector vehicle routing, downside risk constraints (CVaR), and full multi-objective Pareto front benchmarking across MOEA algorithms.
+\end{itemize}
 
 \section{Assumptions}
 \begin{enumerate}
@@ -288,7 +291,7 @@ subject to:
 Constraint~(\ref{eq:c6}) is written in disaggregated per-account form ($x_{i,5} \le y$) rather than aggregate form ($\sum_i x_{i,5} \le N y$). Both share identical integer solutions, but disaggregation produces a substantially tighter continuous LP relaxation bound for Branch-and-Bound pruning. In addition, a bi-criterion formulation ($\max f_1 = \sum \mathbb{E}[R_{i,k}]x_{i,k}$ vs. $\min f_2 = \sum c_{i,k}x_{i,k} + Fy$) is implemented as a preliminary $\varepsilon$-constraint sweep in the repository, with full MOEA comparisons reserved for Phase~II.
 
 \subsection{Empirical Model Size Across Benchmarks}
-On $N=30$ Main (\texttt{accounts\_N30.csv}), $30 \times 6 = 180$ naive pairs lose $4$ legal-ineligible accounts ($B_i < 100\text{k}$) and $16$ $\text{dpd} \ge 90$ no-action pairs; \texttt{TH0028} violates both, so $4+16-1=20$ pairs are pruned, leaving $\mathbf{160}$ binary $x_{i,k}$ plus $\mathbf{1}$ retainer ($161$ variables). Disaggregated linking (\ref{eq:c6}) creates rows only for the $26$ legal-eligible accounts, yielding $30 \text{ (C1)} + 4 \text{ (C2 to C5)} + 26 \text{ (C6)} + 1 \text{ (C7)} = \mathbf{61}$ non-redundant rows. Table~\ref{tab:dims} summarizes dimensions across all benchmark cohorts.
+On $N=30$ Main (\texttt{accounts\_N30.csv}), $30 \times 6 = 180$ naive pairs lose $4$ legal-ineligible accounts ($B_i < 100\text{k}$) and $16$ $\text{dpd} \ge 90$ no-action pairs; \texttt{TH0016} violates both, so $4+16-1=20$ pairs are pruned, leaving $\mathbf{160}$ binary $x_{i,k}$ plus $\mathbf{1}$ retainer ($161$ variables). Disaggregated linking (\ref{eq:c6}) creates rows only for the $26$ legal-eligible accounts, yielding $30 \text{ (C1)} + 4 \text{ (C2 to C5)} + 26 \text{ (C6)} + 1 \text{ (C7)} = \mathbf{61}$ non-redundant rows. Table~\ref{tab:dims} summarizes dimensions across all benchmark cohorts.
 
 \begin{table}[!ht]
 \centering
@@ -314,10 +317,31 @@ Because issue credit grades (A to G) show nearly flat recovery rates ($10.35\%$ 
 \begin{equation}
     \rho_i = P(\text{recovery} > 0 \mid \bm{z}_i) \times \mathbb{E}[\text{rate} \mid \text{recovered}, \bm{z}_i] \times \exp(-0.004 \cdot (\text{dpd}_i - 30)), \quad \rho_i \in [0.01, 0.60]
 \end{equation}
-The full classifier achieves test \textbf{AUC $= 0.7660$}, Brier score $0.1722$, and conditional rate MAE $0.0767$. A stratified 300-account pool (\texttt{accounts\_pool.csv}: A 25, B 50, C 75, D 65, E 45, F 25, G 15) is partitioned into \texttt{N30\_main} ($\text{THB~}9{,}037{,}800$), \texttt{N30\_unseenB} ($\text{THB~}11{,}795{,}500$), \texttt{N100} ($\text{THB~}33{,}808{,}800$), and full \texttt{N300} ($\text{THB~}118{,}633{,}300$).
+The full classifier achieves test \textbf{AUC $= 0.7660$}, Brier score $0.1722$, and conditional rate MAE $0.0767$ across five non-leaking feature groups (loan contract, borrower demographics, credit history, current exposure, and collection state). Table~\ref{tab:grades} (left) confirms why credit grade alone fails: empirical recovery varies by less than one percentage point between Grades A ($10.35\%$) and F ($11.23\%$), while exposure at default more than doubles. From this dataset, a stratified 300-account pool (\texttt{accounts\_pool.csv}: A 25, B 50, C 75, D 65, E 45, F 25, G 15) is partitioned into \texttt{N30\_main} ($\text{THB~}9{,}037{,}800$), \texttt{N30\_unseenB} ($\text{THB~}11{,}795{,}500$), \texttt{N100} ($\text{THB~}33{,}808{,}800$), and full \texttt{N300} ($\text{THB~}118{,}633{,}300$). Table~\ref{tab:grades} (right) lists seven representative accounts from \texttt{N30\_main}, including \texttt{TH0016} where both eligibility rules apply simultaneously.
+
+\begin{table}[!ht]
+\centering
+\caption{Empirical recovery profile by LendingClub credit grade ($260,640$ defaulted accounts) and representative input accounts from \texttt{accounts\_N30.csv}.}
+\label{tab:grades}
+\scriptsize
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrr || lclrrl@{}}
+\toprule
+\multicolumn{5}{c||}{\textbf{Empirical Grade Profile (\texttt{model\_report.json})}} & \multicolumn{6}{c}{\textbf{Sample Cohort Accounts (\texttt{N30\_main})}} \\
+\textbf{Grade} & \textbf{Count} & \textbf{Mean EAD (THB)} & \textbf{$P(\text{rec}>0)$} & \textbf{Mean Rate} & \textbf{ID} & \textbf{Grade} & \textbf{DPD} & \textbf{Balance (THB)} & \textbf{$\rho_i$} & \textbf{Allowed} \\
+\midrule
+A & 13,621 & 268,142 & 59.37\% & 10.35\% & \texttt{TH0001} & B5 & 60 & 154,000 & 0.1320 & All 6 \\
+B & 50,640 & 287,813 & 66.15\% & 10.48\% & \texttt{TH0002} & A5 & 120 & 101,900 & 0.0310 & $k \neq 0$ (5) \\
+C & 82,763 & 342,003 & 67.63\% & 10.52\% & \texttt{TH0003} & D2 & 90 & 123,900 & 0.0647 & $k \neq 0$ (5) \\
+D & 59,324 & 391,807 & 68.32\% & 10.60\% & \texttt{TH0004} & D2 & 180 & 435,200 & 0.0642 & $k \neq 0$ (5) \\
+E & 35,419 & 468,807 & 70.09\% & 10.92\% & \texttt{TH0005} & C3 & 60 & 94,000 & 0.0950 & $k \neq 5$ (5) \\
+F & 14,323 & 531,779 & 72.44\% & 11.23\% & \texttt{TH0006} & C3 & 120 & 356,800 & 0.0886 & $k \neq 0$ (5) \\
+G & 4,550 & 576,353 & 72.15\% & 11.11\% & \texttt{TH0016} & A3 & 120 & 41,700 & 0.0136 & $k \neq 0, 5$ (4) \\
+\bottomrule
+\end{tabular*}
+\end{table}
 
 \section{Problem Size}
-For \texttt{N30\_main}, $1$ account (\texttt{TH0028}) has $4$ allowed strategies, $18$ accounts have $5$, and $11$ have $6$. Thus, the candidate search space size is:
+For \texttt{N30\_main}, $1$ account (\texttt{TH0016}) has $4$ allowed strategies, $18$ accounts have $5$, and $11$ have $6$. Thus, the candidate search space size is:
 \begin{equation}
     |S| = \prod_{i=1}^{30} |K_i| = 4^1 \cdot 5^{18} \cdot 6^{11} \approx \mathbf{5.54 \times 10^{21}} \quad \text{(unconstrained: } 6^{30} \approx 2.21 \times 10^{23}\text{)}
 \end{equation}
@@ -413,7 +437,7 @@ Table~\ref{tab:master} reports exact objectives, bounds, greedy baselines, stoch
 \end{figure}
 
 \subsection{Optimal Strategy Allocation and Sensitivity Analysis}
-Table~\ref{tab:sensitivity} details resource utilization, LP shadow prices, and strategy mixes. Figure~\ref{fig:mix} compares channel proportions across regimes.
+On the primary $N=30$ portfolio (\texttt{N30\_main}, $\text{THB~}9.04\text{M}$ total exposure), the optimal policy engages the external law firm ($y=1$, $5$ litigation cases), generating $\text{THB~}1{,}295{,}662.03$ in gross expected recovery ($14.34\%$ of book value) at a direct operational and retainer cost of $\text{THB~}147{,}575.00$ and external agency commissions of $\text{THB~}48{,}425.69$, yielding $Z^* = \text{THB~}1{,}099{,}661.34$ ($12.17\%$ of total exposure, or a $7.45\times$ net return per baht of direct budget spent). Table~\ref{tab:sensitivity} details resource utilization, LP shadow prices, and strategy mixes across all benchmarks, and Figure~\ref{fig:mix} compares channel proportions across regimes.
 
 \begin{table}[!ht]
 \centering
@@ -456,11 +480,33 @@ All MILP and stochastic incumbents passed exact constraint verification (\texttt
     \item \textbf{Where Exact MILP Wins:} Because the formulation is linear and disaggregated linking ($x_{i,5} \le y$) keeps the continuous polytope tight (shrinking the root LP gap from $1.411\%$ at $N=30$ to $0.013\%$ at $N=300$, with only $4$ fractional variables out of $1{,}625$), compiled C++ HiGHS solves all instances in $0.40\text{ to }2.01\text{ s}$ with a $0\%$ optimality certificate. Meta-heuristics do not outperform HiGHS in runtime or precision on linear problems of this size.
     \item \textbf{Why SA Outperforms GA ($p = 0.00035$):} At $N=300$, uniform crossover splices half of each parent's $300$-gene assignment vector simultaneously, disrupting delicately balanced resource feasibility and widening GA's gap to $2.287\%$ ($\text{SD} = 71{,}639$). Simulated Annealing executes local 1-gene flips ($70\%$) and pairwise swaps ($30\%$), maintaining near-saturated constraint efficiency ($0.683\%$ gap at $N=300$) while escaping the initial retainer barrier via $T_0 = 10^6$.
     \item \textbf{Role of Meta-Heuristics Relative to Custom B\&B:} Our pure-Python Branch-and-Bound solver already stalls within $1{,}000$ nodes on $N=100$, whereas SA and GA scale near-linearly in evaluation cost ($16\text{ to }29\text{ s}$) with guaranteed feasibility. More practically, exact MILP requires linear separability; real-world non-linear multi-touch response saturation or black-box uplift predictors break linear formulations, making an integer-vector SA/GA engine necessary once linear assumptions are relaxed in Phase~II.
+    \item \textbf{Interactive WebAssembly Cross-Check (\texttt{frontend/index.html}):} The browser decision-support tool executes exact \texttt{highs@1.15.3} MILP alongside JavaScript GA and SA across $N \in [5,300]$. Exporting the model with 4-decimal CPLEX LP coefficients (\texttt{src/04\_build\_frontend.py}), in-browser HiGHS reproduces the identical \texttt{N30\_main} optimal net recovery ($\text{THB~}1{,}099{,}661$), cost ($\text{THB~}147{,}575$), and LP bound ($\text{THB~}1{,}115{,}180$), while yielding an alternate dual simplex vertex for shadow prices.
 \end{itemize}
+
+\subsection{Verification Ledger and Phase II Transition}
+Table~\ref{tab:verify} summarizes all verification checks passed by Phase~I deliverables. Beyond single-objective optimization, the bicriterion $\varepsilon$-constraint formulation ($\max f_1$ gross recovery subject to $f_2 \le \varepsilon$ total collection cost across $27$ budget levels in $\text{THB~}[10{,}000,\, 400{,}000]$) is already implemented in \texttt{src/optimizer.py} and \texttt{src/03\_run\_experiments.py}. Phase~II will extend this baseline with multi-objective GA and SA solvers evaluated against the exact Pareto frontier using Hypervolume (HV), Generational Distance (GD), Spacing ($S$), and CPU runtime.
+
+\begin{table}[!ht]
+\centering
+\caption{Phase I analytical and computational verification ledger.}
+\label{tab:verify}
+\scriptsize
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lll@{}}
+\toprule
+\textbf{Check} & \textbf{Evidence / Artifact} & \textbf{Outcome} \\
+\midrule
+Combinatorial Scale ($|S| \ge 3\times 10^6$) & \texttt{N30\_main}: $5.54\times 10^{21}$; \texttt{N300}: $2.04\times 10^{219}$ & Pass \\
+Exact vs. Custom B\&B Primal Match & \texttt{N30\_main} ($6,267$ nodes) \& \texttt{N30\_unseenB} ($1,697$ nodes) match $Z^*$ & Pass \\
+Bound Ordering & $Z_{\text{DP}} \ge \bar{Z}_{\text{LP}} \ge Z^* \ge Z_{\text{SA}} \ge Z_{\text{GA}} \gg Z_{\text{Greedy}}$ across all cohorts & Pass \\
+Constraint Satisfaction & $6/6$ MILP plans and $36/36$ seeded GA/SA plans ($\texttt{violation == 0.0}$) & Pass \\
+Non-Parametric Solver Dominance & Paired Wilcoxon ($n=18$): SA vs. GA, $W=1.0$, $p=0.00035$ & Pass \\
+\bottomrule
+\end{tabular*}
+\end{table}
 
 {\small
 \begin{thebibliography}{99}
-\setlength{\itemsep}{0.5pt}
+\setlength{\itemsep}{2pt}
 \setlength{\parskip}{0pt}
 \bibitem{taha2017} H.~A. Taha, \emph{Operations Research: An Introduction}, 10th~ed. Pearson, 2017.
 \bibitem{land1960} A.~H. Land and A.~G. Doig, ``An automatic method of solving discrete programming problems,'' \emph{Econometrica}, vol.~28, no.~3, pp. 497--520, 1960.
