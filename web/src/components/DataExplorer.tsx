@@ -13,12 +13,13 @@ import { CohortsTab } from "./CohortsTab";
 import { DataTable } from "./DataTable";
 import { ChartCanvas, type ThemeColors } from "./LineChart";
 import { ModelSchema } from "./ModelSchema";
+import { OptimizationTab } from "./OptimizationTab";
 import { PipelineTab } from "./PipelineTab";
 
-const TABS = ["Source & pipeline", "Cohorts", "Accounts", "ML recovery model", "Report instance N=30", "Phase I benchmarks", "Figures"] as const;
+const TABS = ["Source & pipeline", "Cohorts", "Accounts", "ML recovery model", "Optimization", "Report instance N=30", "Phase I benchmarks", "Figures"] as const;
 type Tab = (typeof TABS)[number];
 const HASH: Record<Tab, string> = {
-  "Source & pipeline": "pipeline", Cohorts: "cohorts", Accounts: "accounts", "ML recovery model": "model",
+  "Source & pipeline": "pipeline", Cohorts: "cohorts", Accounts: "accounts", "ML recovery model": "model", Optimization: "optimization",
   "Report instance N=30": "n30", "Phase I benchmarks": "phase1", Figures: "figures",
 };
 const tabFromHash = (): Tab | undefined => {
@@ -45,6 +46,7 @@ export function DataExplorer() {
       {tab === "Cohorts" && <CohortsTab />}
       {tab === "Accounts" && <Accounts />}
       {tab === "ML recovery model" && <Model />}
+      {tab === "Optimization" && <OptimizationTab />}
       {tab === "Report instance N=30" && <ReportN30 />}
       {tab === "Phase I benchmarks" && <Phase1 />}
       {tab === "Figures" && <Figures />}
