@@ -6,6 +6,7 @@ import modelReport from "@/data/model_report.json";
 import { int, pct, sColor, thb } from "@/lib/format";
 import { DEFAULT_CONFIG, STRATEGIES, buildInstance } from "@/lib/optimizer/model";
 import { CodeTabs, type SnippetId } from "./CodeBlock";
+import { RhoExplainer } from "./RhoExplainer";
 
 const KAGGLE = "https://www.kaggle.com/datasets/adarshsng/lending-club-loan-data-csv";
 
@@ -167,6 +168,8 @@ export function PipelineTab() {
           ))}
         </div>
       </div>
+
+      <RhoExplainer />
 
       <h2 className="section-title">Pipeline, step by step — with the actual Python code</h2>
       <p className="note" style={{ marginTop: -4 }}>Each code panel is copied verbatim from the repository (file and line numbers shown) by <code>npm run sync-data</code>, so it always matches the code that produced the results.</p>
