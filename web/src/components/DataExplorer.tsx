@@ -12,12 +12,14 @@ import { STRATEGY_KEYS, int, kThb, pct, sColor, secs, thb } from "@/lib/format";
 import { CohortsTab } from "./CohortsTab";
 import { DataTable } from "./DataTable";
 import { ChartCanvas, type ThemeColors } from "./LineChart";
+import { ModelSchema } from "./ModelSchema";
+import { OptimizationTab } from "./OptimizationTab";
 import { PipelineTab } from "./PipelineTab";
 
-const TABS = ["Source & pipeline", "Cohorts", "Accounts", "ML recovery model", "Report instance N=30", "Phase I benchmarks", "Figures"] as const;
+const TABS = ["Source & pipeline", "Cohorts", "Accounts", "ML recovery model", "Optimization", "Report instance N=30", "Phase I benchmarks", "Figures"] as const;
 type Tab = (typeof TABS)[number];
 const HASH: Record<Tab, string> = {
-  "Source & pipeline": "pipeline", Cohorts: "cohorts", Accounts: "accounts", "ML recovery model": "model",
+  "Source & pipeline": "pipeline", Cohorts: "cohorts", Accounts: "accounts", "ML recovery model": "model", Optimization: "optimization",
   "Report instance N=30": "n30", "Phase I benchmarks": "phase1", Figures: "figures",
 };
 const tabFromHash = (): Tab | undefined => {
@@ -44,6 +46,7 @@ export function DataExplorer() {
       {tab === "Cohorts" && <CohortsTab />}
       {tab === "Accounts" && <Accounts />}
       {tab === "ML recovery model" && <Model />}
+      {tab === "Optimization" && <OptimizationTab />}
       {tab === "Report instance N=30" && <ReportN30 />}
       {tab === "Phase I benchmarks" && <Phase1 />}
       {tab === "Figures" && <Figures />}
@@ -124,6 +127,7 @@ function Model() {
   }), [m]);
   return (
     <div className="stack">
+      <ModelSchema />
       <div className="kpis">
         <div className="kpi"><span>Defaulted loans used</span><b>{int(m.n_defaulted_used)}</b><em>LendingClub charged-off / default</em></div>
         <div className="kpi"><span>Classifier AUC</span><b>{m.classifier_auc}</b><em>vs {m.classifier_auc_grade_only} grade-only</em></div>
