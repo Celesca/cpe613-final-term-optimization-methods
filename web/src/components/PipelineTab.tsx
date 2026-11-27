@@ -5,6 +5,7 @@ import accounts from "@/data/accounts.json";
 import modelReport from "@/data/model_report.json";
 import { int, pct, sColor, thb } from "@/lib/format";
 import { DEFAULT_CONFIG, STRATEGIES, buildInstance } from "@/lib/optimizer/model";
+import { CodeTabs, type SnippetId } from "./CodeBlock";
 
 const KAGGLE = "https://www.kaggle.com/datasets/adarshsng/lending-club-loan-data-csv";
 
@@ -20,49 +21,104 @@ const FLOW: { kind: Kind; title: string; count: string; sub: string }[] = [
 
 const KIND_LABEL: Record<Kind, string> = { data: "real data", model: "machine learning", synthetic: "real + synthetic", opt: "optimization" };
 
-const STAGES: { step: string; title: string; script: string; input: string; output: string; points: React.ReactNode[] }[] = [
+type Stage = {
+  step: string; title: string; script: string; input: string; output: string;
+  points: React.ReactNode[]; code: { id: SnippetId; label: string }[];
+};
+
+const STAGES: Stage[] = [
   {
     step: "1", title: "Extract defaulted loans", script: "src/01_explore.py",
     input: "archive-2/loan.csv (LendingClub, 2007–2018, 2.26 M loans × 145 columns)",
     output: "data/defaulted_raw.csv.gz (36 columns kept)",
     points: [
-      <>Reads the file in 300,000-row chunks and keeps loans whose <code>loan_status</code> is <b>Charged Off</b>, <b>Default</b> or <b>Does not meet the credit policy. Status: Charged Off</b> → 262,447 loans.</>,
-      <>Defines exposure at default <code>EAD = funded_amnt − total_rec_prncp</code> and the historical recovery rate <code>recoveries / EAD</code>.</>,
-      <>Profiles recovery by grade: on average only ≈ {pct(modelReport.mean_actual_rate * 100)} of the exposure was ever recovered, and the rate barely changes from grade A to G.</>,
+      <>Reads the 2.26 M-row file in 300,000-row chunks (it does not fit in memory at once) and keeps loans whose <code>loan_status</code> is <b>Charged Off</b>, <b>Default</b> or <b>Does not meet the credit policy. Status: Charged Off</b> → <b>262,447</b> loans.</>,
+      <>Defines exposure at default <code>EAD = funded_amnt − total_rec_prncp</code> (what was still owed) and the historical recovery rate <code>recoveries / EAD</code>.</>,
+      <>On average only ≈ {pct(modelReport.mean_actual_rate * 100)} of the exposure was ever recovered, and the rate barely changes from grade A to G.</>,
     ],
+    code: [{ id: "extract", label: "filter + EAD" }],
   },
   {
-    step: "2", title: "Learn the recovery rate ρᵢ (two-part hurdle model)", script: "src/02_model_and_dataset.py",
+    step: "2", title: "Clean the data and build features", script: "src/02_model_and_dataset.py",
     input: "data/defaulted_raw.csv.gz",
-    output: "classifier + regressor (in memory), data/model_report.json",
+    output: "feature table X (24 columns) + targets",
     points: [
-      <>Drops tiny exposures (EAD ≤ $500) → <b>{int(modelReport.n_defaulted_used)}</b> loans. Splits 75% train / 25% test (seed 613).</>,
-      <><b>Part 1 – will they pay anything?</b> <code>HistGradientBoostingClassifier</code> predicts P(recoveries &gt; 0). Test AUC <b>{modelReport.classifier_auc}</b> vs {modelReport.classifier_auc_grade_only} using grade alone; Brier {modelReport.classifier_brier}.</>,
-      <><b>Part 2 – how much, if they pay?</b> <code>HistGradientBoostingRegressor</code> trained only on loans that recovered something predicts the recovery rate (MAE {pct(modelReport.rate_mae_given_recovered * 100, 2)}).</>,
-      <>24 input features known before collection starts — grade, sub-grade, interest rate, term, instalment, income, DTI, employment length, revolving balance &amp; utilisation, open/total accounts, inquiries, past delinquencies, public records, bankruptcies, mortgages, EAD, share of principal repaid, late fees, issue year, home ownership, verification status, purpose. <b>No leakage:</b> <code>recoveries</code>, <code>collection_recovery_fee</code> and <code>total_pymnt</code> are never used as inputs.</>,
-      <>Calibration check: mean predicted rate {pct(modelReport.mean_predicted_rate * 100, 2)} = mean actual rate {pct(modelReport.mean_actual_rate * 100, 2)}.</>,
+      <>Drops tiny exposures (EAD ≤ $500) → <b>{int(modelReport.n_defaulted_used)}</b> loans.</>,
+      <>Two targets: <code>recovered</code> (did we get anything back? 0/1) and <code>rec_rate</code> (share of EAD recovered, clipped to 0–1).</>,
+      <>Turns text columns into numbers (term “36 months” → 36, grade A–G → 0–6, categories → codes) and keeps 24 features known <i>before</i> collection starts.</>,
+      <><b>No leakage:</b> <code>recoveries</code>, <code>collection_recovery_fee</code> and <code>total_pymnt</code> describe the outcome, so they are never inputs.</>,
     ],
+    code: [{ id: "features", label: "features" }],
   },
   {
-    step: "3", title: "Build the Thai collection portfolio", script: "src/02_model_and_dataset.py",
+    step: "3", title: "Train the two-part recovery model", script: "src/02_model_and_dataset.py",
+    input: "X, recovered, rec_rate",
+    output: "classifier + regressor, data/model_report.json",
+    points: [
+      <>Splits 75% train / 25% test (seed 613) so the scores below are measured on loans the model never saw.</>,
+      <><b>Part 1 – will they pay anything?</b> <code>HistGradientBoostingClassifier</code> → P(pay). Test AUC <b>{modelReport.classifier_auc}</b> vs {modelReport.classifier_auc_grade_only} with grade alone.</>,
+      <><b>Part 2 – how much, if they pay?</b> <code>HistGradientBoostingRegressor</code> trained only on loans that recovered something (MAE {pct(modelReport.rate_mae_given_recovered * 100, 2)}).</>,
+      <>Expected recovery rate = P(pay) × E[rate | pay]. Mean predicted {pct(modelReport.mean_predicted_rate * 100, 2)} = mean actual {pct(modelReport.mean_actual_rate * 100, 2)}.</>,
+    ],
+    code: [{ id: "train", label: "train + evaluate" }],
+  },
+  {
+    step: "4", title: "Build the Thai collection portfolio", script: "src/02_model_and_dataset.py",
     input: "defaulted loans + the two fitted models",
     output: "data/accounts_pool.csv (300 accounts), data/accounts_N30.csv",
     points: [
-      <>Stratified sample by grade: A 25 · B 50 · C 75 · D 65 · E 45 · F 25 · G 15 = 300 accounts, then shuffled and renamed <code>TH0001…TH0300</code>.</>,
-      <>Converts USD to baht at <b>{modelReport.fx_thb_per_usd} THB/USD</b>: <code>balance_thb = EAD × 33</code> rounded to ฿100.</>,
-      <><b>Synthetic fields</b> (LendingClub has no collection-stage data): days past due <code>dpd</code> ∈ {"{30, 60, 90, 120, 180}"} with probabilities {"{0.30, 0.25, 0.20, 0.15, 0.10}"}; phone <code>reachable</code> with probability 0.85 (0.70 for grades E–G). Random seed 613, so the dataset is reproducible.</>,
-      <>Base recovery rate: <code>ρᵢ = P(pay) × E[rate | pay] × e^(−0.004·(dpd − 30))</code>, clipped to [0.01, 0.60] — older debts are harder to collect.</>,
+      <>Stratified sample by grade: A 25 · B 50 · C 75 · D 65 · E 45 · F 25 · G 15 = 300 accounts, renamed <code>TH0001…TH0300</code>.</>,
+      <>Scores each account with both models → <code>p_pay</code>, <code>rate_if_pay</code>.</>,
+      <><b>Synthetic fields</b> (LendingClub has no collection-stage data): days past due <code>dpd</code> and phone <code>reachable</code>, drawn with seed 613 so the dataset is reproducible.</>,
+      <><code>ρᵢ = P(pay) × E[rate | pay] × e^(−0.004·(dpd − 30))</code>, clipped to [0.01, 0.60]; baht balance = EAD × {modelReport.fx_thb_per_usd}.</>,
     ],
+    code: [{ id: "portfolio", label: "sample + ρ" }],
   },
   {
-    step: "4", title: "Optimize and benchmark", script: "src/optimizer.py · 03_run_experiments.py · 03b_phase1_benchmark.py",
-    input: "accounts_pool.csv + strategy table + resource limits",
-    output: "results_N30.json, optimal_assignment_N30.csv, phase1_*.csv/json, docs/fig_*.png",
+    step: "5", title: "Turn accounts into an optimization model", script: "src/optimizer.py",
+    input: "accounts + strategy table + limits (DEFAULT_CFG)",
+    output: "matrices R (recovery), C (cost), V (net value), allowed (eligibility)",
     points: [
-      <>Each strategy multiplies ρᵢ by a lift λₖ; value of strategy k for account i is <code>vᵢₖ = Bᵢ·min(0.9, ρᵢλₖ)·(1 − commission) − cost</code>.</>,
-      <>Cohorts: <b>N30_main</b> = TH0001–0030 (the report instance), <b>N30_unseenB</b> = TH0031–0060, <b>N100</b> = first 100, <b>N300</b> = all 300.</>,
-      <>This website runs the same model on the server (TypeScript port, tested to match the Python optimum) and reads the result files on the <i>Report instance</i> and <i>Phase I</i> tabs.</>,
+      <>Six strategies, each with a lift λₖ, a fixed cost, a % of balance cost, a commission and call hours.</>,
+      <>For every account × strategy: rate <code>r = min(0.9, ρᵢ·λₖ)</code> (×0.4 for SMS/call if the phone is unreachable), recovery <code>R = B·r</code>, value <code>V = R(1 − commission) − cost</code>.</>,
+      <>Eligibility rules remove options up front: no legal below ฿100k, no “none” for DPD ≥ 90.</>,
     ],
+    code: [{ id: "strategies", label: "STRATEGIES" }, { id: "values", label: "Instance.__post_init__" }],
+  },
+  {
+    step: "6", title: "Exact solution: MILP with HiGHS", script: "src/optimizer.py",
+    input: "R, C, W, allowed, limits",
+    output: "optimal plan Z*, LP bound and shadow prices",
+    points: [
+      <>Variables: one binary <code>x[i,k]</code> per allowed pair plus <code>y</code> (law firm hired). Each <code>add(…)</code> is one constraint row: one strategy per account, budget, call hours, field visits, hard-collection cap, <code>x[i,legal] ≤ y</code>, and <code>L·y ≤ Σ x[i,legal]</code>.</>,
+      <><code>scipy.optimize.milp</code> (HiGHS branch-and-cut) returns the proven optimum. Solving the same model without integrality gives the LP bound and the shadow price of each resource.</>,
+      <>The Greedy baseline and a hand-written Branch &amp; Bound are in the same file for comparison.</>,
+    ],
+    code: [{ id: "build_lp", label: "build_lp" }, { id: "solve_milp", label: "solve_milp" }, { id: "lp_relax", label: "lp_relaxation" }, { id: "greedy", label: "greedy" }],
+  },
+  {
+    step: "7", title: "Meta-heuristics: Genetic Algorithm and Simulated Annealing", script: "src/optimizer.py",
+    input: "the same instance",
+    output: "best plan + convergence history per run",
+    points: [
+      <>A plan is a list of N strategy numbers (only allowed values), so “one strategy per account” always holds.</>,
+      <>Broken limits are punished: <code>fitness = objective − 100,000 × violation</code>, where <code>violation()</code> measures how far each limit is exceeded.</>,
+      <><b>GA:</b> 120 plans × 400 generations, keep the best 2, pick parents by tournament of 3, uniform crossover (p = 0.9), random mutation (1.5/N per gene).</>,
+      <><b>SA:</b> 60,000 steps, change one account (sometimes swap two), always accept better plans and worse ones with probability <code>e^(Δ/T)</code>; T starts at 10⁶ and cools ×0.99975 per step.</>,
+    ],
+    code: [{ id: "violation", label: "violation" }, { id: "penalty", label: "penalised" }, { id: "ga", label: "genetic_algorithm" }, { id: "sa", label: "simulated_annealing" }],
+  },
+  {
+    step: "8", title: "Benchmark across cohorts and seeds", script: "src/03b_phase1_benchmark.py",
+    input: "accounts_pool.csv",
+    output: "phase1_benchmark.json, phase1_summary_table.csv, phase1_seed_runs.csv, docs/fig_p1_*.png",
+    points: [
+      <><code>make_cfg</code> scales budget, hours, visits and cap with N (“prop”) or keeps the N=30 values (“frozen”); the law-firm contract F and L never scale.</>,
+      <>Six cohorts are cut from the pool and every method runs on each; GA and SA run with seeds 0, 1, 2.</>,
+      <>A Wilcoxon signed-rank test over the 18 paired GA/SA gaps checks whether SA is really better (p = 0.00035).</>,
+      <>The multi-objective Pareto front (max gross recovery, min cost) uses the ε-constraint method on the exact model.</>,
+    ],
+    code: [{ id: "make_cfg", label: "make_cfg" }, { id: "cohorts", label: "cohorts" }, { id: "wilcoxon", label: "Wilcoxon" }, { id: "pareto", label: "pareto_front" }],
   },
 ];
 
@@ -112,19 +168,23 @@ export function PipelineTab() {
         </div>
       </div>
 
-      <h2 className="section-title">Pipeline, step by step</h2>
+      <h2 className="section-title">Pipeline, step by step — with the actual Python code</h2>
+      <p className="note" style={{ marginTop: -4 }}>Each code panel is copied verbatim from the repository (file and line numbers shown) by <code>npm run sync-data</code>, so it always matches the code that produced the results.</p>
       <div className="stages">
         {STAGES.map((s) => (
           <div className="card stage" key={s.step}>
-            <div className="stage-head">
-              <span className="stage-num">{s.step}</span>
-              <div>
-                <h3 style={{ margin: 0 }}>{s.title}</h3>
-                <code>{s.script}</code>
+            <div className="stage-text">
+              <div className="stage-head">
+                <span className="stage-num">{s.step}</span>
+                <div>
+                  <h3 style={{ margin: 0 }}>{s.title}</h3>
+                  <code>{s.script}</code>
+                </div>
               </div>
+              <ul>{s.points.map((p, i) => <li key={i}>{p}</li>)}</ul>
+              <p className="note"><b>In:</b> {s.input}<br /><b>Out:</b> {s.output}</p>
             </div>
-            <ul>{s.points.map((p, i) => <li key={i}>{p}</li>)}</ul>
-            <p className="note"><b>In:</b> {s.input}<br /><b>Out:</b> {s.output}</p>
+            <CodeTabs items={s.code} />
           </div>
         ))}
       </div>
