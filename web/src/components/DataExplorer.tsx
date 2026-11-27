@@ -9,14 +9,15 @@ import seedRuns from "@/data/phase1_seed_runs.json";
 import summary from "@/data/phase1_summary.json";
 import resultsN30 from "@/data/results_n30.json";
 import { STRATEGY_KEYS, int, kThb, pct, sColor, secs, thb } from "@/lib/format";
+import { CohortsTab } from "./CohortsTab";
 import { DataTable } from "./DataTable";
 import { ChartCanvas, type ThemeColors } from "./LineChart";
 import { PipelineTab } from "./PipelineTab";
 
-const TABS = ["Source & pipeline", "Accounts", "ML recovery model", "Report instance N=30", "Phase I benchmarks", "Figures"] as const;
+const TABS = ["Source & pipeline", "Cohorts", "Accounts", "ML recovery model", "Report instance N=30", "Phase I benchmarks", "Figures"] as const;
 type Tab = (typeof TABS)[number];
 const HASH: Record<Tab, string> = {
-  "Source & pipeline": "pipeline", Accounts: "accounts", "ML recovery model": "model",
+  "Source & pipeline": "pipeline", Cohorts: "cohorts", Accounts: "accounts", "ML recovery model": "model",
   "Report instance N=30": "n30", "Phase I benchmarks": "phase1", Figures: "figures",
 };
 const tabFromHash = (): Tab | undefined => {
@@ -40,6 +41,7 @@ export function DataExplorer() {
         {TABS.map((t) => <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? "active" : ""} onClick={() => select(t)}>{t}</button>)}
       </div>
       {tab === "Source & pipeline" && <PipelineTab />}
+      {tab === "Cohorts" && <CohortsTab />}
       {tab === "Accounts" && <Accounts />}
       {tab === "ML recovery model" && <Model />}
       {tab === "Report instance N=30" && <ReportN30 />}
