@@ -31,7 +31,7 @@ export default function About() {
           <li><b>Simulated Annealing</b> — 60,000 iterations, T<sub>0</sub> = 10<sup>6</sup>, α = 0.99975, flip + swap moves, same penalty.</li>
         </ul>
         <p>The course asks for a math-programming method <i>and</i> a meta-heuristic “such as GA or SA”. This project implements both meta-heuristics and compares them:
-          in Phase I, SA beat GA on all 18 paired runs (mean gap 0.72% vs 1.82%, Wilcoxon p = 0.00035). GA is kept as the comparison meta-heuristic.</p>
+          in Phase I, over 18 paired runs (6 cohorts × 3 seeds) SA had the smaller gap in 16, tied in 1 and lost 1 (mean gap 0.72% vs 1.82%, Wilcoxon p = 0.00035). GA is kept as the comparison meta-heuristic.</p>
         <p className="note">The TypeScript solvers are a port of <code>src/optimizer.py</code>; automated tests check that the server reproduces the Python optimum (฿1,099,661.34 at N = 30) and the N = 100 / 300 optima.
           GA/SA use a different random generator than numpy, so individual seeded runs differ from the Python runs while the statistics are comparable.</p>
 
