@@ -4,7 +4,7 @@
 import optimal from "@/data/optimal_assignment_n30.json";
 import results from "@/data/results_n30.json";
 import { int, pct, sColor, thb } from "@/lib/format";
-import { DEFAULT_CONFIG, LEGAL, STRATEGIES, buildInstance } from "@/lib/optimizer/model";
+import { AGENCY, DEFAULT_CONFIG, LEGAL, STRATEGIES, buildInstance } from "@/lib/optimizer/model";
 
 const INPUT_FIELDS: { field: string; meaning: string; use: string }[] = [
   { field: "balance_thb", meaning: "Unpaid balance in baht", use: "Calculates expected recovery and the legal action cost, and decides whether legal action is allowed" },
@@ -27,6 +27,7 @@ export function RhoExplainer() {
   const I = buildInstance(DEFAULT_CONFIG, STRATEGIES);
   const a = I.acc[0];
   const base = a.balance * a.rho;
+  const agencyCommission = I.R[0][AGENCY] * STRATEGIES[AGENCY].commission;
   const saved = optimal[0].strategy;
   const examples = [optimal[0], optimal[3]];
   const ex = results.exact;
@@ -61,8 +62,9 @@ export function RhoExplainer() {
         </div>
 
         <div className="card">
-          <h3>2. How do different strategies change the expected recovery?</h3>
-          <p className="mono" style={{ margin: "0 0 8px" }}>expected recovery = balance × rho × strategy multiplier</p>
+          <h3>2. How do different strategies change the expected recovery and net recovery?</h3>
+          <p className="mono" style={{ margin: "0 0 4px" }}>expected recovery = balance × rho × strategy multiplier</p>
+          <p className="mono" style={{ margin: "0 0 8px" }}>net recovery = expected recovery − commission − direct cost</p>
           <div className="prose">
             <p>
               For <code>{a.account_id}</code>, the balance is <b>{thb(a.balance)}</b> and <code>rho</code> is <b>{a.rho}</b> ({pct(a.rho * 100)}).
@@ -70,11 +72,24 @@ export function RhoExplainer() {
               and <b>it can go up or down</b>. The recovery rate is capped at {pct(DEFAULT_CONFIG.rate_cap * 100, 0)}, and SMS and calls are
               multiplied by {DEFAULT_CONFIG.unreachable_factor} if the phone is unreachable.
             </p>
+            <p>
+              <b>Net recovery</b> starts from the base recovery rate (<code>rho</code>), which gives the expected recovery for the chosen
+              strategy. Then we subtract <b>what we have to pay</b> to get that money:
+            </p>
+            <ul>
+              <li><b>Commission:</b> a share of the recovered money. By default only the collection agency takes it ({pct(STRATEGIES[AGENCY].commission * 100, 0)}).</li>
+              <li><b>Direct cost:</b> the cost of the action for that account. Legal action costs {thb(STRATEGIES[LEGAL].cost)} plus {pct(STRATEGIES[LEGAL].cost_pct * 100, 0)} of the balance.</li>
+              <li><b>Law firm fixed fee:</b> {thb(DEFAULT_CONFIG.legal_retainer)}, subtracted <b>once from the total of all accounts</b> if any account goes to legal action.</li>
+            </ul>
+            <p>
+              Example, <code>{a.account_id}</code> with the collection agency: {thb(I.R[0][AGENCY])} − {thb(agencyCommission)} commission −{" "}
+              {thb(I.C[0][AGENCY])} direct cost = <b>{thb(I.V[0][AGENCY])}</b> net recovery. (Each amount is rounded separately, so the shown figures can differ by ฿1.)
+            </p>
           </div>
           <div className="scroll">
             <table>
               <thead>
-                <tr><th>Strategy</th><th className="num">Multiplier</th><th className="num">Expected recovery</th><th className="num">Cost and commission</th><th className="num">Net value</th></tr>
+                <tr><th>Strategy</th><th className="num">Multiplier</th><th className="num">Expected recovery</th><th className="num">Cost and commission</th><th className="num">Net recovery</th></tr>
               </thead>
               <tbody>
                 {STRATEGIES.map((s, k) => (
@@ -95,8 +110,8 @@ export function RhoExplainer() {
           </p>
           <div className="prose">
             <ul>
-              <li><b>Higher recovery does not always mean higher net value.</b> The agency recovers more than a field visit, but is worth less here because of its commission.</li>
-              <li><b>Not every account can get its best option.</b> Budget, staff time, visit slots and case limits are shared, so the optimizer maximizes the total net value across all accounts.</li>
+              <li><b>Higher expected recovery does not always mean higher net recovery.</b> The agency recovers more than a field visit, but is worth less here because of its commission.</li>
+              <li><b>Not every account can get its best option.</b> Budget, staff time, visit slots and case limits are shared, so the optimizer maximizes the total net recovery across all accounts.</li>
               <li><b>The multipliers are assumptions.</b> The two models do not learn them. They are planning values that you can change in the simulator.</li>
             </ul>
           </div>
