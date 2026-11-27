@@ -12,6 +12,7 @@ import { STRATEGY_KEYS, int, kThb, pct, sColor, secs, thb } from "@/lib/format";
 import { CohortsTab } from "./CohortsTab";
 import { DataTable } from "./DataTable";
 import { ChartCanvas, type ThemeColors } from "./LineChart";
+import { ModelSchema } from "./ModelSchema";
 import { PipelineTab } from "./PipelineTab";
 
 const TABS = ["Source & pipeline", "Cohorts", "Accounts", "ML recovery model", "Report instance N=30", "Phase I benchmarks", "Figures"] as const;
@@ -124,6 +125,7 @@ function Model() {
   }), [m]);
   return (
     <div className="stack">
+      <ModelSchema />
       <div className="kpis">
         <div className="kpi"><span>Defaulted loans used</span><b>{int(m.n_defaulted_used)}</b><em>LendingClub charged-off / default</em></div>
         <div className="kpi"><span>Classifier AUC</span><b>{m.classifier_auc}</b><em>vs {m.classifier_auc_grade_only} grade-only</em></div>
