@@ -51,6 +51,9 @@ export default function About() {
         <pre><code>{`curl -N -X POST https://<your-app>.vercel.app/api/solve \\
   -H 'content-type: application/json' -d '{"cfg":{"n":100,"budget":500000}}'`}</code></pre>
 
+        <h2 className="section-title">Data</h2>
+        <p>Real defaulted LendingClub loans (Kaggle), a recovery model trained on 260,640 of them, and a 300-account baht portfolio. The full pipeline is on <a href="/data#pipeline">Data → Source &amp; pipeline</a>.</p>
+
         <h2 className="section-title">Assumptions</h2>
         <p>Strategy lifts (×0.3 … ×2.3) and baht costs are assumptions you can change in the simulator. DPD and phone reachability are synthetic, because LendingClub does not record them.</p>
       </main>
